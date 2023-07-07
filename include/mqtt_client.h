@@ -3,7 +3,7 @@
 
 #include <MQTTAsync.h>
 
-#define SSL_PAHT "./conf/server.crt"
+#define SSL_PATH "./conf/server.crt"
 
 static MQTTAsync_SSLOptions configure_ssl_opts();
 static MQTTAsync_connectOptions configure_conn_opts();
