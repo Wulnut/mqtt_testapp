@@ -1,5 +1,6 @@
 #include <MQTTAsync.h>
 #include "mqtt_client.h"
+#include "log.h"
 
 static MQTTAsync_connectOptions configure_conn_opts() {
 
@@ -29,5 +30,11 @@ static MQTTAsync_SSLOptions configure_ssl_opts() {
 	ssl_opts.sslVersion = MQTT_SSL_VERSION_TLS_1_2;
 
 	return ssl_opts;
+
+}
+
+void mqtt_run() {
+
+   log_info("connect");
 
 }

@@ -10,5 +10,9 @@ int main() {
 
     log_info("Hello World\n");
 
+    testapp_init();
+
+    testapp_run();
+
     return 0;
 }
