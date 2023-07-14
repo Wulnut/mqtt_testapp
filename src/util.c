@@ -1,9 +1,10 @@
 #include "util.h"
 #include "log.h"
-#include "mqtt_client.h"
 #include <stdio.h>
 
-mqtt_info_t mit;
+int count;
+char buff[MAXSIZE];
+char *lable = "\\/\\-\\/";
 
 void progress_bar(int flag) {
 
@@ -16,7 +17,7 @@ void progress_bar(int flag) {
     buff[count] = '>';
 }
 
-void testapp_init() {
+void testapp_init(mqtt_info_t *mit) {
 
    log_info("testapp init start\n"); 
 
@@ -25,7 +26,7 @@ void testapp_init() {
 
     memset(line, '\0', MAX_LINE_LEN);
 
-    fp = open(CONFIG_PATH, "r");
+    fp = fopen(CONFIG_PATH, "r");
 
     if (fp == NULL) {
         log_error("test.conf open failed!\n");
@@ -42,29 +43,29 @@ void testapp_init() {
             continue;
         }
 
-       if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
+        if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
             continue;
-       } 
+        } 
 
         for (int i = strlen(key) - 1; i >= 0 && key[i] == ' '; --i) {
             key[i] = '\0';
         }
 
         if (strcmp(key, "host") == 0) {
-            strncpy(mit.host, value, strlen(mit.host) + 1);
-            log_debug("host: %s\n", mit.host);
+
+            strncpy(mit->host, value, strlen(value) + 1);
+
+            log_debug("host: %s\n", value, mit->host);
+
         }
     }
 
-   fclose(fp); 
-
 err:
     fclose(fp);
-    exit(0);
 }
 
-void testapp_run() {
+void testapp_run(mqtt_info_t *mit) {
 
-    mqtt_run();
+    mqtt_run(mit);
 
 }

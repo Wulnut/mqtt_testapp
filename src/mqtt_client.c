@@ -1,8 +1,22 @@
 #include <MQTTAsync.h>
 #include "mqtt_client.h"
 #include "log.h"
+#include "cJSON.h"
 
-static MQTTAsync_connectOptions configure_conn_opts() {
+static void on_connect (void *context, MQTTAsync_successData *reponse) {
+    
+    MQTTAsync *client = (MQTTAsync)context;
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
+
+    // TODO
+}
+
+static void on_connect_failure (void *context, MQTTAsync_failureData *response) {
+    log_error("Connect failed reponse is %s, rc %d\n", response->message, response ? response->code : 0);
+}
+
+static MQTTAsync_connectOptions configure_conn_opts(mqtt_info_t *mit) {
 
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 
@@ -10,9 +24,9 @@ static MQTTAsync_connectOptions configure_conn_opts() {
     conn_opts.keepAliveInterval = 30;
     conn_opts.cleansession = 1;
 
-    conn_opts.onSuccess;
-    conn_opts.onFailure;
-    conn_opts.context;
+    conn_opts.onSuccess = on_connect;
+    conn_opts.onFailure = on_connect_failure;
+    conn_opts.context = mit;
 
     conn_opts.automaticReconnect = 1;
     conn_opts.minRetryInterval = 2;
@@ -33,8 +47,10 @@ static MQTTAsync_SSLOptions configure_ssl_opts() {
 
 }
 
-void mqtt_run() {
+void mqtt_run(mqtt_info_t *mit) {
 
    log_info("connect");
+
+   mqtt_info_t *info_t = mit;
 
 }
