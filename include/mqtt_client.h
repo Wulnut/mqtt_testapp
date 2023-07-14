@@ -26,4 +26,4 @@ static MQTTAsync_connectOptions configure_conn_opts();
 
 void mqtt_run();
 
-#endif MQTT_CLIENT
+#endif //MQTT_CLIENT
