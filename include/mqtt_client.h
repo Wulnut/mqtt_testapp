@@ -19,7 +19,8 @@ typedef struct cts_mqtt_client {
 	char report_rt[128];
 	char passowrd[128];
 	char username[128];
-    char host[128];
+    char address[128];
+	char port[32];
 } mqtt_info_t;
 
 void mqtt_run();
