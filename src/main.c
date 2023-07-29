@@ -14,7 +14,7 @@ int main() {
 
     testapp_init(&mit);
 
-    testapp_run(&mit);
+    mqtt_run();
 
     return 0;
 }

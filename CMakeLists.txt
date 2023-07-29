@@ -7,6 +7,8 @@ project (mqtt_testapp)
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set (CMAKE_C_COMPILE_FEATURES /usr/bin/clang)
+set (CMAKE_C_STANDARD 99)
+set (CMAKE_C_STANDARD_REQUIRED ON)
 
 # 设置生成目录
 set (EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

@@ -12,7 +12,7 @@
 
 void progress_bar(int flag);
 
+void config_init(mqtt_info_t *mit);
 void testapp_init(mqtt_info_t *mit);
-void testapp_run(mqtt_info_t *mit);
 
 #endif

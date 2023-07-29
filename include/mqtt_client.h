@@ -1,12 +1,13 @@
 #ifndef MQTT_CLIENT
 #define MQTT_CLIENT
 
-#include <MQTTAsync.h>
+#include <mosquitto.h>
 
 #define SSL_PATH "./conf/server.crt"
 
 typedef struct cts_mqtt_client {
-	MQTTAsync mqtt_client;
+	struct mosquitto *mosq;
+	char id[32];
 	char query[128];
 	char query_res[128];
 	char cmd[128];
@@ -20,9 +21,6 @@ typedef struct cts_mqtt_client {
 	char username[128];
     char host[128];
 } mqtt_info_t;
-
-static MQTTAsync_SSLOptions configure_ssl_opts();
-static MQTTAsync_connectOptions configure_conn_opts();
 
 void mqtt_run();
 
