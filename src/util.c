@@ -10,6 +10,7 @@
 int count;
 char buff[MAXSIZE];
 char *lable = "\\/\\-\\/";
+mqtt_info_t *client;
 
 void progress_bar(int flag) {
 
@@ -58,9 +59,9 @@ void config_init(mqtt_info_t *mit) {
 
         if (strcmp(key, "host") == 0) {
 
-            strncpy(mit->host, value, strlen(value) + 1);
+            sscanf(value, "%63[^:]:%7s", mit->address, mit->port);
 
-            log_debug("host: %s\n", value, mit->host);
+            log_debug("host: %s:%s\n", value, mit->address, mit->port);
 
         }
     }
@@ -132,13 +133,24 @@ void mqtt_init(mqtt_info_t * mit) {
     mosquitto_message_callback_set(mosq, on_message);
 
     // TODO
-    // mosquitto_connect_async();
+    if ((rc = mosquitto_connect_async(mosq, mit->address, atoi(mit->port), 30)) != MOSQ_ERR_SUCCESS) {
+
+        log_error("Failed to connect: %s (%d)\n", mosquitto_strerror(rc), rc);
+
+        mosquitto_disconnect(mosq);
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+    }
+
+    mit->mosq = mosq;
 }
 
 void testapp_init(mqtt_info_t *mit) {
     
-    mqtt_info_t *client = mit;
+    client = mit;
 
     config_init(client);
+
+    mqtt_init(client);
 
 }
