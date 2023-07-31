@@ -59,7 +59,7 @@ void config_init(mqtt_info_t *mit) {
         if (strcmp(key, "host") == 0) {
 
             sscanf(value, "%63[^:]:%7s", mit->address, mit->port);
-
+            /*test*/
             log_debug("host: %s:%s\n", value, mit->address, mit->port);
 
         }
