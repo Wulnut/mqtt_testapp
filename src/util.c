@@ -10,7 +10,6 @@
 int count;
 char buff[MAXSIZE];
 char *lable = "\\/\\-\\/";
-mqtt_info_t *client;
 
 void progress_bar(int flag) {
 
@@ -70,35 +69,6 @@ err:
     fclose(fp);
 }
 
-static void on_log (struct mosquitto *mosq, void *userdata, int level, const char *str) {
-
-    log_info("[mosquitto log]: %s\n", str);
-
-}
-
-static void on_connect (struct mosquitto *mosq, void *obj, int rc) {
-    
-    log_info("Successful connecttion\n");
-
-    //TODO
-}
-
-static void on_message (struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message) {
-
-    char* payload = (char *)calloc(message->payloadlen + 1, sizeof (char));
-    char* topic   = NULL;
-
-    memcpy (payload, (char *)message->payload, message->payloadlen);
-
-    log_debug ("(CTS) <- Message receive payload: %s, topic: %s\n", payload, message->topic);
-
-    sprintf (topic, "%s/res", message->topic);
-    
-    //TODO utask_set();
-     
-    log_debug ("(CTS) -> publish: %s\n", topic);
-}
-
 void mqtt_init(mqtt_info_t * mit) {
 
     int rc = 0;
@@ -128,29 +98,13 @@ void mqtt_init(mqtt_info_t * mit) {
 		mosquitto_lib_cleanup();
 	}
 
-    mosquitto_log_callback_set(mosq, on_log);
-    mosquitto_connect_callback_set(mosq, on_connect);
-    mosquitto_message_callback_set(mosq, on_message);
-
-    // TODO
-    if ((rc = mosquitto_connect_async(mosq, mit->address, atoi(mit->port), 30)) != MOSQ_ERR_SUCCESS) {
-
-        log_error("Failed to connect: %s (%d)\n", mosquitto_strerror(rc), rc);
-
-        mosquitto_disconnect(mosq);
-        mosquitto_destroy(mosq);
-        mosquitto_lib_cleanup();
-    }
-
     mit->mosq = mosq;
 }
 
 void testapp_init(mqtt_info_t *mit) {
-    
-    client = mit;
 
-    config_init(client);
+    config_init(mit);
 
-    mqtt_init(client);
+    mqtt_init(mit);
 
 }
