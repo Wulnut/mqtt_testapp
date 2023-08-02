@@ -23,6 +23,8 @@ typedef struct cts_mqtt_client {
 	char port[32];
 } mqtt_info_t;
 
+
+
 void mqtt_run(mqtt_info_t *mit);
 
 #endif //MQTT_CLIENT

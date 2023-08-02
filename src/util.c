@@ -1,6 +1,7 @@
 #include "util.h"
 #include "log.h"
 #include "mqtt_client.h"
+#include "cJSON.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -35,7 +36,8 @@ void config_init(mqtt_info_t *mit) {
 
     if (fp == NULL) {
         log_error("test.conf open failed!\n");
-        goto err;
+        //goto err;
+		return;
     }
 
     while (fgets(line, MAX_LINE_LEN, fp) != NULL) {
@@ -44,25 +46,34 @@ void config_init(mqtt_info_t *mit) {
         memset(key, '\0', MAX_LINE_LEN);
         memset(value, '\0', MAX_LINE_LEN);
 
-        if (line[0] == '#' || (line[0] == '/' && line[1] == '/') || line[0] == '\0') {
+        if (line[0] == '#' || (line[0] == '/' && line[1] == '/') || line[0] == '\0' || line[0] == '\r' ||  line[0] == '\n' ) {
             continue;
         }
-
-        if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
-            continue;
-        } 
-
-        for (int i = strlen(key) - 1; i >= 0 && key[i] == ' '; --i) {
-            key[i] = '\0';
-        }
-
-        if (strcmp(key, "host") == 0) {
-
-            sscanf(value, "%63[^:]:%7s", mit->address, mit->port);
-            /*test*/
-            log_debug("host: %s:%s\n", value, mit->address, mit->port);
-
-        }
+        if (sscanf(line, "%[^=] = %[^\n]", key, value) == 2)
+		{
+			for (int i = strlen(key) - 1; i >= 0 && key[i] == ' '; --i) 
+			{
+				key[i] = '\0';
+			}
+			if (strcmp(key, "host") == 0) 
+			{
+				//sscanf(value, "%63[^:]:%7s", mit->address, mit->port);
+				//log_debug("host: %s:%s\n", value, mit->address, mit->port);
+				sscanf(value, "ssl://%63[^:]:%7s", mit->address, mit->port);
+				log_debug("host: %s:%s\n", mit->address, mit->port);
+			}
+			continue;
+		} 
+		cJSON *cjson_data = cJSON_Parse(line);
+		if(cjson_data != NULL)
+		{
+			/*TODO*/
+            
+		}
+		else{
+			log_error("cjson failed : %s\n",line);
+		}
+		
     }
 
 err:
