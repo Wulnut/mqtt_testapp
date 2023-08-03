@@ -1,0 +1,189 @@
+
+# code 1006
+{"code":1006,"sequence":"7092707747896377344","deviceId":"1931818307682306","devName":"devName","devType":"FTTRm","devManufacturer":"xxxxxx","devModel":"xxxxxxx","devSeriesNumber":"xxxxxxxx","devMac":"00016C06A629","devVersion":"XXX.YYY.ZZZ.MMM","softwareVersion":"xxx.xxx.xxx","wanIp":"192.168.1.12","lanIp":"192.168.3.2","protocolVer":"1.0","time":1361542433}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377345","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"information"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377346","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"version"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377347","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"bandSupport"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377348","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"cpuRate"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377349","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"memoryUseRate"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377350","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"uploadSpeed"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377351","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"downloadSpeed"}]}
+
+
+
+# code 1008
+
+{"code":1008,"sequence":"7092707747896377352","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"wlanStats"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377353","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"onlineTime"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377354","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"load"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377355","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"elinkStat"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377356","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"channelQuality"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377357","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"networkType"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377358","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"networkInfo"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377359","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"ponInfo"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377360","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"wirelessModuleWorkPattern"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377361","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"wifi"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377362","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"meshSwitch"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377363","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"wifiSwitch"}]}
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377364","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"workMode"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377365","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"ssidMesList"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377366","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"blackList"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377367","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"pluginList"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377368","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"connectedDevMesList"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377369","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"terminalMesList"}]}
+
+
+# code 1008
+
+{"code":1008,"sequence":"7092707747896377370","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":1361542433,"query":[{"name":"internetLimitSwitch"}]}
+
+
+
+# code 1008
+{"code":1008,"sequence":"7092707747896377371","time":1361542433,"deviceId":"1931818307682306","mac":"14EB088CD2AB","query":[{"name":"wifiSwitch"},{"name":"devVersion"}]}
+
+
+
+# code 1010
+
+{"code":1010,"sequence":"7092707747896377372","deviceId":"1931818307682306","mac":"14EB088CD2AB","time":12381249129,"rebootTime":0}
+
+
+
+# code 1020
+{"code":1020,"sequence":"7092707747896377373","time":12381249129,"deviceId":"1931818307682306","mac":"14EB088CD2AB","cmd":"add","ssidMes":{"ssidName":"name","enable":1,"internalIsolation":1,"encrypt":"aes","ssidId":1,"band":"2.4G","auth":"open","ssidKey":"123456","hideWirelessNetwork":"on"}}
+
+
+
+# code 1064
+{"code":1064,"sequence":"7092707747896377374","time":1361542433,"deviceId":"1931818307682306","mac":"14EB088CD2AB","status":"on"}
+
+
+
+# code 1030
+
+{"code":1030,"sequence":"7092707747896377375","time":12381249129,"deviceId":"1931818307682306","mac":"14EB088CD2AB","radioFrequencyMes":{"switch":1,"unit":"xxxx","workMode":"xxx","channel":"ch","bandWidth":"20","power":"xxx","maxClientNum":10}}
+
+
+# code 1060
+{"code":1060,"sequence":"7092707747896377376","time":1361542433,"deviceId":"1931818307682306","mac":"14EB088CD2AB","status":"on"}
+
+
+
+# code 1034
+{"code":1034,"sequence":"7092707747896377377","time":1361542433,"deviceId":"1931818307682306","mac":"14EB088CD2AB","band":"2.4G","ssidId":1,"status":"on"}
+
+
+
+# code 1056
+{"code":1056,"sequence":"7092707747896377378","time":1361542433,"deviceId":"1931818307682306","mac":"14EB088CD2AB","status":"on"}
+
+
+
+# code 1111
+{"code":1111,"sequence":"7092707747896377379","time":1361542433,"deviceId":"1931818307682306","mac":"14EB088CD2AB","status":"on"}
+
+
+# code 1058
+{"code":1058,"sequence":"7092707747896377380","time":1361542433,"deviceId":"1931818307682306","mac":"14EB088CD2AB","cmd":"add","blackList":["001122334455","112233445566"]}
+
+
+
+# code 1048
+{"code":1048,"sequence":"7092707747896377381","time":12381249129,"deviceId":"1931818307682306","mac":"14EB088CD2AB","enable":"yes","reportPeriod":5}
+
+
+# code 1113
+{"code":1113,"sequence":"7092707747896377382","time":12381249129,"deviceId":"1931818307682306","mac":"14EB088CD2AB","enable":"yes","reportPeriod":30,"reportTimes":100,"query":[{"name":"cpuRate"},{"name":"downloadSpeed"}]}
+
+
+# code 1117
+
+{"code":1117,"sequence":"7092707747896377383","time":12381249129,"deviceId":"1931818307682306","mac":"14EB088CD2AB","status":"on"}
+
