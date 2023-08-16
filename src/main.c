@@ -1,3 +1,4 @@
+#include <mosquitto.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -10,9 +11,7 @@ int main() {
 
     log_set_level(LOG_TRACE);
 
-    log_info("Hello World\n");
-
-    testapp_init(&mit);
+    config_init(&mit);
 
     mqtt_run(&mit);
 

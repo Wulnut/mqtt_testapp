@@ -3,7 +3,7 @@
 
 #include <mosquitto.h>
 
-#define SSL_PATH "./conf/server.crt"
+#define SSL_PATH "../conf/zxykey.cer"
 
 typedef struct cts_mqtt_client {
 	struct mosquitto *mosq;

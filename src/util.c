@@ -24,7 +24,7 @@ void progress_bar(int flag) {
 
 void config_init(mqtt_info_t *mit) {
 
-   log_info("testapp init start\n"); 
+   log_info("testapp init start"); 
 
     FILE *fp = NULL;
     char line[MAX_LINE_LEN];
@@ -40,7 +40,7 @@ void config_init(mqtt_info_t *mit) {
 
     while (fgets(line, MAX_LINE_LEN, fp) != NULL) {
 
-        char key[MAX_LINE_LEN], value[MAX_LINE_LEN];
+        char key[MAX_LINE_LEN], value[MAX_LINE_LEN], tmp[MAX_LINE_LEN];
         memset(key, '\0', MAX_LINE_LEN);
         memset(value, '\0', MAX_LINE_LEN);
 
@@ -58,53 +58,23 @@ void config_init(mqtt_info_t *mit) {
 
         if (strcmp(key, "host") == 0) {
 
-            sscanf(value, "%63[^:]:%7s", mit->address, mit->port);
+            sscanf(value, "%63[^:]:%7s", tmp, mit->port);
 
-            log_debug("host: %s:%s\n", value, mit->address, mit->port);
+            if (sprintf(mit->address, "ssl://%s", tmp) < 0) {
+                log_error("address error\n");
+            }
 
+            log_debug("%s %s:%s", __func__, mit->address, mit->port);
+        }
+
+        if (strcmp(key, "id") == 0) {
+
+            strncpy(mit->id, value, strlen(value) + 1);
+
+            log_debug("%s id:%s", __func__, mit->id);
         }
     }
 
 err:
     fclose(fp);
-}
-
-void mqtt_init(mqtt_info_t * mit) {
-
-    int rc = 0;
-
-    struct mosquitto *mosq = NULL;
-
-    mosq = mosquitto_new(mit->id, true, NULL);
-
-    if (mosq == NULL) {
-
-        log_error("create mosquitto client error...\n");
-
-        mosquitto_lib_cleanup();
-    }
-
-    if ((rc = mosquitto_tls_set(mosq, SSL_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
-
-		log_error("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
-
-		mosquitto_lib_cleanup();
-	}
-
-	if ((rc = mosquitto_tls_opts_set(mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
-
-		log_error("Failed to mosquitto_tls_opts_set: %s (%d)\n", mosquitto_strerror(rc), rc);
-
-		mosquitto_lib_cleanup();
-	}
-
-    mit->mosq = mosq;
-}
-
-void testapp_init(mqtt_info_t *mit) {
-
-    config_init(mit);
-
-    mqtt_init(mit);
-
 }
