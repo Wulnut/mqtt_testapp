@@ -8,7 +8,7 @@ mqtt_info_t mit;
 
 int main() { 
 
-    log_set_level(LOG_FATAL);
+    log_set_level(LOG_TRACE);
 
     log_info("Hello World\n");
 
