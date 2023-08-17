@@ -31,4 +31,4 @@ set_target_properties (testapp_shared PROPERTIES OUTPUT_NAME "testapp")
 set_target_properties (testapp_static PROPERTIES OUTPUT_NAME "testapp")
 
 add_executable(testapp ${SRC_LIST})
-TARGET_LINK_LIBRARIES(testapp mosquitto)
+TARGET_LINK_LIBRARIES(testapp mosquitto ssl)
