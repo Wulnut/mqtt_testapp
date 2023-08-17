@@ -66,6 +66,13 @@ void mqtt_run(mqtt_info_t *mit) {
 		mosquitto_lib_cleanup();
 	}
 
+    if ((rc = mosquitto_username_pw_set(client->mosq, mit->id, mit->passowrd)) != MOSQ_ERR_SUCCESS) {
+
+        log_error("Failed to %s: %s(%d)", __func__, mosquitto_strerror(rc), rc);
+
+        mosquitto_lib_cleanup();
+    }
+
     mosquitto_log_callback_set(client->mosq, on_log);
     mosquitto_connect_callback_set(client->mosq, on_connect);
     mosquitto_message_callback_set(client->mosq, on_message);

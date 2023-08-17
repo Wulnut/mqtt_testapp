@@ -73,6 +73,13 @@ void config_init(mqtt_info_t *mit) {
 
             log_debug("%s id:%s", __func__, mit->id);
         }
+
+        if (strcmp(key, "pwd") == 0) {
+
+            strncpy(mit->passowrd, value, strlen(value) + 1);
+
+            log_debug("%s pwd:%s", __func__, mit->passowrd);
+        }
     }
 
 err:
