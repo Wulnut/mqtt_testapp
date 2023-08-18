@@ -61,10 +61,14 @@ void config_init(mqtt_info_t *mit) {
             sscanf(value, "%63[^:]:%7s", tmp, mit->port);
 
             if (sprintf(mit->address, "ssl://%s", tmp) < 0) {
-                log_error("address error\n");
+                log_error("address error");
             }
 
-            log_debug("%s %s:%s", __func__, mit->address, mit->port);
+            if (sprintf(mit->host, "%s:%s", mit->address, mit->port) < 0) {
+                log_error("host error");
+            }
+
+            log_debug("%s %s", __func__, mit->host);
         }
 
         if (strcmp(key, "id") == 0) {

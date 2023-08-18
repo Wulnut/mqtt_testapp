@@ -1,99 +1,81 @@
-#include <mosquitto.h>
+#include <MQTTAsync.h>
 #include <stdlib.h>
 #include <string.h>
 #include "mqtt_client.h"
 #include "log.h"
 #include "cJSON.h"
 
-mqtt_info_t *client;
+mqtt_info_t *info;
 
-static void on_log (struct mosquitto *mosq, void *userdata, int level, const char *str) {
-
-    log_info("[mosquitto log]: %s\n", str);
-
-}
-
-static void on_connect (struct mosquitto *mosq, void *obj, int rc) {
+static void on_connect (void *context, MQTTAsync_successData* response) {
     
-    log_info("Successful connecttion\n");
+    log_info("Successful connected");
 
     //TODO
 }
 
-static void on_message (struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message) {
+static void on_connect_failure (void *context, MQTTAsync_failureData* response) {
 
-    char* payload = (char *)calloc(message->payloadlen + 1, sizeof (char));
-    char* topic   = NULL;
+   log_info("Failure connected");
+   
+   //TODO
+}
+
+static int on_message (void *context, char *topic, int topic_len, MQTTAsync_message *message) {
+
+    char* payload = message->payload;
 
     memcpy (payload, (char *)message->payload, message->payloadlen);
 
-    log_debug ("(CTS) <- Message receive payload: %s, topic: %s\n", payload, message->topic);
+    log_debug ("(CTS) <- Message receive payload: %s, topic: %s\n", payload, topic);
 
-    sprintf (topic, "%s/res", message->topic);
-    
-    //TODO utask_set();
+    sprintf (topic, "%s/res", topic);
      
     log_debug ("(CTS) -> publish: %s\n", topic);
+
+    MQTTAsync_freeMessage(&message);
+    MQTTAsync_free(topic);
+
+    return 1;
 }
 
 void mqtt_run(mqtt_info_t *mit) {
 
    log_info("mqtt_run");
 
-   client = mit;
+   info = mit;
    int rc = 0;
 
-    client->mosq = mosquitto_new(mit->id, true, NULL);
+   MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+   MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
+//    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 
-    if (client->mosq == NULL) {
+   conn_opts.MQTTVersion = MQTTVERSION_3_1_1;
+   conn_opts.keepAliveInterval= 20;
+   conn_opts.cleansession = 1;
 
-        log_error("create mosquitto client error...\n");
+   ssl_opts.verify = 1;
+   ssl_opts.enableServerCertAuth = 1;
+   ssl_opts.trustStore = SSL_PATH;
+   ssl_opts.sslVersion = MQTT_SSL_VERSION_TLS_1_2;
 
-        mosquitto_lib_cleanup();
-    }
+   conn_opts.ssl = &ssl_opts;
+   conn_opts.onSuccess = on_connect;
+   conn_opts.onFailure = on_connect_failure;
+   conn_opts.context = info->client;
 
-    if ((rc = mosquitto_tls_set(client->mosq, SSL_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
-
-		log_error("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
-
-		mosquitto_lib_cleanup();
-	}
-
-	if ((rc = mosquitto_tls_opts_set(client->mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
-
-		log_error("Failed to mosquitto_tls_opts_set: %s (%d)\n", mosquitto_strerror(rc), rc);
-
-		mosquitto_lib_cleanup();
-	}
-
-    if ((rc = mosquitto_username_pw_set(client->mosq, mit->id, mit->passowrd)) != MOSQ_ERR_SUCCESS) {
-
-        log_error("Failed to %s: %s(%d)", __func__, mosquitto_strerror(rc), rc);
-
-        mosquitto_lib_cleanup();
-    }
-
-    mosquitto_log_callback_set(client->mosq, on_log);
-    mosquitto_connect_callback_set(client->mosq, on_connect);
-    mosquitto_message_callback_set(client->mosq, on_message);
-
-    // TODO
-    if ((rc = mosquitto_connect_async(client->mosq, client->address, atoi(client->port), 60)) != MOSQ_ERR_SUCCESS) {
-
-        log_error("Failed to connect: %s (%d)", mosquitto_strerror(rc), rc);
-
-        mosquitto_disconnect(client->mosq);
-        mosquitto_destroy(client->mosq);
-        mosquitto_lib_cleanup();
+   if ((rc = MQTTAsync_create(&(info->client), info->address, info->id,
+       MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTASYNC_SUCCESS) 
+   {
+      log_error("%d MQTTAsync_create to create %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
    }
 
-    if ((rc = mosquitto_loop_start(client->mosq)) != MOSQ_ERR_SUCCESS) {
+   MQTTAsync_setCallbacks(info->client, NULL, NULL, on_message, NULL);
 
-        log_error("Failed to mosquitto loop start: %s (%d)", mosquitto_strerror(rc), rc);
-
-        mosquitto_disconnect(client->mosq);
-        mosquitto_loop_stop(client->mosq, 1);
-        mosquitto_destroy(client->mosq);
-        mosquitto_lib_cleanup();
+   if ((rc = MQTTAsync_connect(info->client, &conn_opts)) != MQTTASYNC_SUCCESS) {
+      log_error("%d Failed to connect %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
+   } else {
+      log_debug("connect to MQTT Broker!");
    }
+
 }
