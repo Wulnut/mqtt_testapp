@@ -76,6 +76,54 @@ static void conn_lost(void *context, char *cause) {
 	}
 }
 
+static void on_reconnect(void* context, char* cause) {
+	MQTTAsync client = info->client;
+
+	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+	int rc = 0;
+
+	log_debug("Successful reconnection\n");
+
+	opts.context = client;
+
+	if ((rc = MQTTAsync_subscribe(client, info->query_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+		log_error("Failed to subscribe topic: %s\n", info->query_res);
+	} else {
+		log_debug("Successful subscribe topic: %s\n", info->query_res);
+	}
+
+	if ((rc = MQTTAsync_subscribe(client, info->cmd_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+		log_error("Failed to subscribe topic: %s\n", info->cmd_res);
+	} else {
+		log_debug("Successful subscribe topic: %s\n", info->cmd_res);
+	}
+
+	if ((rc = MQTTAsync_subscribe(client, info->plugin_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+		log_error("Failed to subscribe topic: %s\n", info->plugin_res);
+	} else {
+		log_debug("Successful subscribe topic: %s\n", info->plugin_res);
+	}
+
+   if ((rc = MQTTAsync_subscribe(client, info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
+      log_error("Failed to subscribe topic: %s\n", info->report);
+   } else {
+      log_debug("Successful subscribe topic: %s\n", info->report);
+   }
+
+   if ((rc = MQTTAsync_subscribe(client, info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
+      log_error("Failed to subscribe topic: %s\n", info->report);
+   } else {
+      log_debug("Successful subscribe topic: %s\n", info->report);
+   }
+
+   if ((rc = MQTTAsync_subscribe(client, info->report_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+      log_error("Failed to subscribe topic: %s\n", info->report_res);
+   } else {
+      log_debug("Successful subscribe topic: %s\n", info->report_res);
+   }
+}
+
+
 void mqtt_run(mqtt_info_t *mit) {
 
    log_info("mqtt_run");
@@ -108,6 +156,10 @@ void mqtt_run(mqtt_info_t *mit) {
 
    if ((rc = MQTTAsync_setCallbacks(info->client, NULL, conn_lost, on_message, NULL)) != MQTTASYNC_SUCCESS) {
       log_error("%d Failed to set callback %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
+   }
+
+   if ((rc = MQTTAsync_setConnected(info->client, info->client, on_reconnect)) != MQTTASYNC_SUCCESS) {
+      log_error("%d Faild to MQTTAsync_setConnected: %s (%d)", __LINE__, MQTTAsync_strerror(rc), rc);
    }
 
    if ((rc = MQTTAsync_connect(info->client, &conn_opts)) != MQTTASYNC_SUCCESS) {
