@@ -5,7 +5,6 @@
 #include "util.h"
 
 mqtt_info_t mit;
-opt_t g_opt;
 
 int main(int argc, char **argv) { 
 
@@ -14,7 +13,7 @@ int main(int argc, char **argv) {
     process_signal_init();
 
     //BUG
-    opt_init(argc, argv, &g_opt);
+    opt_init(argc, argv);
 
     config_init(&mit);
 
