@@ -1,6 +1,8 @@
 #include "util.h"
+#include "cJSON.h"
 #include "log.h"
 #include "mqtt_client.h"
+#include <bits/types/FILE.h>
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -16,6 +18,15 @@ char *lable = "\\/\\-\\/";
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+int signals[31] = {
+    SIGHUP,  SIGINT,    SIGQUIT, SIGILL,   SIGTRAP,   SIGABRT,
+    SIGIOT,  SIGBUS,    SIGFPE,  SIGKILL,  SIGUSR1,   SIGSEGV,
+    SIGUSR2, SIGPIPE,   SIGALRM, SIGTERM,  16, SIGCONT,
+    SIGSTOP, SIGTSTP,   SIGTTIN, SIGTTOU,  SIGURG,    SIGXCPU,
+    SIGXFSZ, SIGVTALRM, SIGPROF, SIGWINCH, SIGIO,     SIGPWR,
+    SIGSYS,
+};
+
 void progress_bar(int flag) {
 
     if (flag == 1) count ++;
@@ -30,7 +41,6 @@ void progress_bar(int flag) {
 void config_init(mqtt_info_t *mit) {
 
    log_info("testapp init start"); 
-   log_debug("conf_path: %s", conf_path);
 
     FILE *fp = NULL;
     char line[MAX_LINE_LEN];
@@ -89,15 +99,6 @@ err:
     fclose(fp);
 }
 
-int signals[31] = {
-    SIGHUP,  SIGINT,    SIGQUIT, SIGILL,   SIGTRAP,   SIGABRT,
-    SIGIOT,  SIGBUS,    SIGFPE,  SIGKILL,  SIGUSR1,   SIGSEGV,
-    SIGUSR2, SIGPIPE,   SIGALRM, SIGTERM,  16, SIGCONT,
-    SIGSTOP, SIGTSTP,   SIGTTIN, SIGTTOU,  SIGURG,    SIGXCPU,
-    SIGXFSZ, SIGVTALRM, SIGPROF, SIGWINCH, SIGIO,     SIGPWR,
-    SIGSYS,
-};
-
 void process_exit_cb(int __noused)
 {
     log_debug("process receive signal:%d\n", __noused);
@@ -143,15 +144,141 @@ void process_signal_init(void)
 
 void opt_init(int argc, char **argv)
 {
-    if (argc != 2) goto err;
+    if (argc == 1 || argc > 3) goto err;
 
     strncpy(conf_path, argv[1], sizeof(conf_path));
+    strncpy(test_conf, argv[2], sizeof(test_conf));
 
     return ;
 
 err:
-    printf("\n Usage: \n");
-    printf("\t testapp conf_path\n");
+    printf(" Usage: \n");
+    printf("\t testapp conf_path test_path\n");
+    printf(" description: \n");
+    printf("\t conf_path: mqtt configuration file\n");
+    printf("\t test_path: mqtt topic name and json commands file\n");
     exit(1);
 
+}
+
+int read_test_conf (mqtt_info_t *info, char *path) 
+{
+
+    log_info("read test conf: %s", path);
+
+    int i = 0;
+    FILE *fp = NULL;
+    char line[MAX_LINE_LEN];
+
+    memset(line, '\0', sizeof (line));
+
+    fp = fopen(path, "r");
+
+    if (fp == NULL) {
+
+        log_error("%s open failed!", path);
+
+        return -1;
+    }
+
+    while (fgets(line, MAX_LINE_LEN, fp) != NULL) {
+
+        char key[MAX_LINE_LEN], value[MAX_LINE_LEN];
+        memset(key, '\0', MAX_LINE_LEN);
+        memset(value, '\0', MAX_LINE_LEN);
+
+        if (line[0] == '#' || (line[0] == '/' && line[1] == '/') || line[0] == '\0') {
+            continue;
+        }
+
+        if (strstr(line, "code") != NULL) {
+
+            info->command[i] = cJSON_Parse(line);
+
+            if (info->command[i] == NULL) {
+
+                log_error("command read failed\n");
+
+                return -2;
+            }
+
+            log_debug("command[%d]: %s", i + 1, cJSON_PrintUnformatted(info->command[i]));
+            
+            ++ i;
+        }
+
+        if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
+            continue;
+        } 
+
+        for (int i = strlen(key) - 1; i >= 0 && key[i] == ' '; --i) {
+            key[i] = '\0';
+        }
+
+        if (strcmp(key, "cmd") == 0) {
+
+            strncpy(info->cmd, value, strlen(value) + 1);
+            
+            log_debug("cmd: %s", info->cmd);
+        }
+
+        if (strcmp(key, "cmd_res") == 0) {
+
+            strncpy(info->cmd_res, value, strlen(value) + 1);
+
+            log_debug("report_res: %s", info->cmd_res);
+        }
+
+        if (strcmp(key, "plugin") == 0) {
+
+            strncpy(info->plugin, value, strlen(value) + 1);
+
+            log_debug("plugin: %s", info->plugin);
+        }
+
+        if (strcmp(key, "plugin_res") == 0) {
+
+            strncpy(info->plugin_res, value, strlen(value) + 1);
+
+            log_debug("plugin_res: %s", info->plugin_res);
+        }
+
+        if (strcmp(key, "query") == 0) {
+
+            strncpy(info->query, value, strlen(value) + 1);
+
+            log_debug("query: %s", info->query);
+        }
+
+        if (strcmp(key, "query_res") == 0) {
+
+            strncpy(info->query_res, value, strlen(value) + 1);
+
+            log_debug("query_res: %s", info->query_res);
+        }
+
+        if (strcmp(key, "report") == 0) {
+
+            strncpy(info->report, value, strlen(value) + 1);
+
+            log_debug("report: %s", info->report);
+        }
+
+        if (strcmp(key, "report_res") == 0) {
+
+            strncpy(info->report_res, value, strlen(value) + 1);
+
+            log_debug("report_res: %s", info->report_res);
+        }
+
+        if (strcmp(key, "report_rt") == 0) {
+
+            strncpy(info->report_rt, value, strlen(value) + 1);
+
+            log_debug("report_rt: %s", info->report_rt);
+        }
+
+    }
+
+    return 1;
 }
