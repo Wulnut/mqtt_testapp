@@ -11,13 +11,14 @@
 #define CONFIG_PATH "../conf/test.conf"
 #define HUWEI_PATH "../conf/huawei.conf"
 #define TIANYI_PATH "../conf/tianyi.conf"
-char test_conf[128];
-char conf_path[128];
+char test_conf[128]; // test conf file
+char conf_path[128]; // mqtt conf file
 
 void progress_bar(int flag);
 
 void config_init(mqtt_info_t *mit);
 void process_signal_init(void);
 void opt_init(int argc, char **argv);
+int read_test_conf(mqtt_info_t *info, char *path);
 
 #endif
