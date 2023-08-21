@@ -30,6 +30,7 @@ void progress_bar(int flag) {
 void config_init(mqtt_info_t *mit) {
 
    log_info("testapp init start"); 
+   log_debug("conf_path: %s", conf_path);
 
     FILE *fp = NULL;
     char line[MAX_LINE_LEN];
@@ -140,41 +141,17 @@ void process_signal_init(void)
     }
 }
 
-void opt_init(int argc, char **argv, opt_t *opts)
+void opt_init(int argc, char **argv)
 {
-    // BUG
-    if (argc == 1) {
-        printf("\n Usage:\n");
-        printf(" testapp COMMAND\n");
-        puts(" ");
-        printf("Commands:\n");
-        printf("%-10s %s\n", "t", "tianyi");
-        printf("%-10s %s\n", "h", "huawei");
-        printf("%-10s %s\n", "z", "zte");
+    if (argc != 2) goto err;
 
-        exit(1);
-    }
+    strncpy(conf_path, argv[1], sizeof(conf_path));
 
-    opt_t *g_opt = opts;
-	int opt = -1;
+    return ;
 
-	while ((opt = getopt(argc, argv, "t:h:z:")) != -1) {
-		switch (opt) {
+err:
+    printf("\n Usage: \n");
+    printf("\t testapp conf_path\n");
+    exit(1);
 
-			case 't':
-				g_opt->t = 1;
-
-				break;
-
-			case 'h':
-				g_opt->h = 1;
-
-				break;
-
-			case 'z':
-				g_opt->z = 1;
-
-				break;
-		}
-	}
 }
