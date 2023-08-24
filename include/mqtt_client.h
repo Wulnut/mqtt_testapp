@@ -3,13 +3,10 @@
 
 #include "cJSON.h"
 #include <MQTTAsync.h>
-#include <MQTTClient.h>
 
 #define SSL_PATH "../conf/zxykey.cer"
 
 typedef struct cts_mqtt_client {
-	MQTTAsync client;	
-	MQTTClient mqtt;
 	char id[32];
 	char query[128];
 	char query_res[128];
