@@ -4,32 +4,31 @@
 #include "mqtt_client.h"
 #include <bits/types/FILE.h>
 #include <mosquitto.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 
-int count;
-char buff[MAXSIZE];
-char *lable = "\\/\\-\\/";
+int   count;
+char  buff[MAXSIZE];
+char* lable = "\\/\\-\\/";
 
 #ifndef ARRAY_SIZE
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#    define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
 int signals[31] = {
-    SIGHUP,  SIGINT,    SIGQUIT, SIGILL,   SIGTRAP,   SIGABRT,
-    SIGIOT,  SIGBUS,    SIGFPE,  SIGKILL,  SIGUSR1,   SIGSEGV,
-    SIGUSR2, SIGPIPE,   SIGALRM, SIGTERM,  16, SIGCONT,
-    SIGSTOP, SIGTSTP,   SIGTTIN, SIGTTOU,  SIGURG,    SIGXCPU,
-    SIGXFSZ, SIGVTALRM, SIGPROF, SIGWINCH, SIGIO,     SIGPWR,
-    SIGSYS,
+    SIGHUP,  SIGINT,    SIGQUIT, SIGILL,   SIGTRAP, SIGABRT, SIGIOT,  SIGBUS,
+    SIGFPE,  SIGKILL,   SIGUSR1, SIGSEGV,  SIGUSR2, SIGPIPE, SIGALRM, SIGTERM,
+    16,      SIGCONT,   SIGSTOP, SIGTSTP,  SIGTTIN, SIGTTOU, SIGURG,  SIGXCPU,
+    SIGXFSZ, SIGVTALRM, SIGPROF, SIGWINCH, SIGIO,   SIGPWR,  SIGSYS,
 };
 
-void progress_bar(int flag) {
+void progress_bar(int flag)
+{
 
-    if (flag == 1) count ++;
+    if (flag == 1) count++;
 
     printf("[%-39s][%c][%.1f%%]\r", buff, lable[count % 4], (count + 1) * 2.5);
 
@@ -38,12 +37,13 @@ void progress_bar(int flag) {
     buff[count] = '>';
 }
 
-void config_init(mqtt_info_t *mit) {
+void config_init(mqtt_info_t* mit)
+{
 
-   log_info("testapp init start"); 
+    log_info("testapp init start");
 
-    FILE *fp = NULL;
-    char line[MAX_LINE_LEN];
+    FILE* fp = NULL;
+    char  line[MAX_LINE_LEN];
 
     memset(line, '\0', MAX_LINE_LEN);
 
@@ -66,7 +66,7 @@ void config_init(mqtt_info_t *mit) {
 
         if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
             continue;
-        } 
+        }
 
         for (int i = strlen(key) - 1; i >= 0 && key[i] == ' '; --i) {
             key[i] = '\0';
@@ -103,35 +103,25 @@ void process_exit_cb(int __noused)
 {
     log_debug("process receive signal:%d\n", __noused);
     switch (__noused) {
-        case SIGQUIT:
-            exit(EXIT_FAILURE);
+    case SIGQUIT: exit(EXIT_FAILURE);
 
-        case SIGTERM:
-            exit(EXIT_FAILURE);
+    case SIGTERM: exit(EXIT_FAILURE);
 
-        case SIGINT:
-            exit(EXIT_FAILURE);
+    case SIGINT: exit(EXIT_FAILURE);
 
-        case SIGHUP:
-            exit(EXIT_FAILURE);
+    case SIGHUP: exit(EXIT_FAILURE);
 
-        case SIGSEGV:
-            exit(EXIT_FAILURE);
+    case SIGSEGV: exit(EXIT_FAILURE);
 
-        case SIGKILL:
-            exit(EXIT_FAILURE);
+    case SIGKILL: exit(EXIT_FAILURE);
 
-        case SIGABRT:
-            exit(EXIT_FAILURE);
+    case SIGABRT: exit(EXIT_FAILURE);
 
-        case 16:
-            exit(EXIT_FAILURE);
+    case 16: exit(EXIT_FAILURE);
 
-        case SIGILL:
-            exit(EXIT_FAILURE);
+    case SIGILL: exit(EXIT_FAILURE);
 
-        default:
-            break;
+    default: break;
     }
 }
 
@@ -142,14 +132,14 @@ void process_signal_init(void)
     }
 }
 
-void opt_init(int argc, char **argv)
+void opt_init(int argc, char** argv)
 {
     if (argc == 1 || argc > 3) goto err;
 
     strncpy(conf_path, argv[1], sizeof(conf_path));
     strncpy(test_conf, argv[2], sizeof(test_conf));
 
-    return ;
+    return;
 
 err:
     printf(" Usage: \n");
@@ -158,19 +148,18 @@ err:
     printf("\t conf_path: mqtt configuration file\n");
     printf("\t test_path: mqtt topic name and json commands file\n");
     exit(1);
-
 }
 
-int read_test_conf (mqtt_info_t *info, char *path) 
+int read_test_conf(mqtt_info_t* info, char* path)
 {
 
     log_info("read test conf: %s", path);
 
-    int i = 0;
-    FILE *fp = NULL;
-    char line[MAX_LINE_LEN];
+    int   i  = 0;
+    FILE* fp = NULL;
+    char  line[MAX_LINE_LEN];
 
-    memset(line, '\0', sizeof (line));
+    memset(line, '\0', sizeof(line));
 
     fp = fopen(path, "r");
 
@@ -203,13 +192,13 @@ int read_test_conf (mqtt_info_t *info, char *path)
             }
 
             log_debug("command[%d]: %s", i + 1, cJSON_PrintUnformatted(info->command[i]));
-            
-            ++ i;
+
+            ++i;
         }
 
         if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
             continue;
-        } 
+        }
 
         for (int i = strlen(key) - 1; i >= 0 && key[i] == ' '; --i) {
             key[i] = '\0';
@@ -218,7 +207,7 @@ int read_test_conf (mqtt_info_t *info, char *path)
         if (strcmp(key, "cmd") == 0) {
 
             strncpy(info->cmd, value, strlen(value) + 1);
-            
+
             log_debug("cmd: %s", info->cmd);
         }
 
@@ -277,7 +266,6 @@ int read_test_conf (mqtt_info_t *info, char *path)
 
             log_debug("report_rt: %s", info->report_rt);
         }
-
     }
 
     return 1;

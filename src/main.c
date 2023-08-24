@@ -1,12 +1,13 @@
+#include "log.h"
+#include "util.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "log.h"
-#include "util.h"
 
 mqtt_info_t mit;
 
-int main(int argc, char **argv) { 
+int main(int argc, char** argv)
+{
 
     log_set_level(LOG_TRACE);
 
