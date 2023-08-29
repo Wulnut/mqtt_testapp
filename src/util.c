@@ -215,7 +215,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
 
             strncpy(info->cmd_res, value, strlen(value) + 1);
 
-            log_debug("report_res: %s", info->cmd_res);
+            log_debug("cmd_res: %s", info->cmd_res);
         }
 
         if (strcmp(key, "plugin") == 0) {

@@ -8,49 +8,52 @@
 #include <string.h>
 
 #if 0
+mqtt_info_t *mqtt_info;
+
 static void on_connect(void *context, MQTTAsync_successData *response) { 
 
    MQTTAsync client = (MQTTAsync) context;
    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc = 0;
 
-   log_info("Successful connection\n");
+   log_info("Successful connection");
 
-   if ((rc = MQTTAsync_subscribe(client, info->query_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-		log_error("Failed to subscribe topic: %s\n", info->query_res);
+   if ((rc = MQTTAsync_subscribe(client, mqtt_info->query_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+		log_error("Failed to subscribe topic: %s", mqtt_info->query_res);
 	} else {
-		log_debug("Successful subscribe topic: %s\n", info->query_res);
+		log_debug("Successful subscribe topic: %s", mqtt_info->query_res);
 	}
 
-	if ((rc = MQTTAsync_subscribe(client, info->cmd_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-		log_error("Failed to subscribe topic: %s\n", info->cmd_res);
+	if ((rc = MQTTAsync_subscribe(client, mqtt_info->cmd_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+		log_error("Failed to subscribe topic: %s", mqtt_info->cmd_res);
 	} else {
-		log_debug("Successful subscribe topic: %s\n", info->cmd_res);
+		log_debug("Successful subscribe topic: %s", mqtt_info->cmd_res);
 	}
 
-	if ((rc = MQTTAsync_subscribe(client, info->plugin_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-		log_error("Failed to subscribe topic: %s\n", info->plugin_res);
+	if ((rc = MQTTAsync_subscribe(client, mqtt_info->plugin_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+		log_error("Failed to subscribe topic: %s", mqtt_info->plugin_res);
 	} else {
-		log_debug("Successful subscribe topic: %s\n", info->plugin_res);
+		log_debug("Successful subscribe topic: %s", mqtt_info->plugin_res);
 	}
 
-   if ((rc = MQTTAsync_subscribe(client, info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
-      log_error("Failed to subscribe topic: %s\n", info->report);
+   if ((rc = MQTTAsync_subscribe(client, mqtt_info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
+      log_error("Failed to subscribe topic: %s", mqtt_info->report);
    } else {
-      log_debug("Successful subscribe topic: %s\n", info->report);
+      log_debug("Successful subscribe topic: %s", mqtt_info->report);
    }
 
-   if ((rc = MQTTAsync_subscribe(client, info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
-      log_error("Failed to subscribe topic: %s\n", info->report);
+   if ((rc = MQTTAsync_subscribe(client, mqtt_info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
+      log_error("Failed to subscribe topic: %s", mqtt_info->report);
    } else {
-      log_debug("Successful subscribe topic: %s\n", info->report);
+      log_debug("Successful subscribe topic: %s", mqtt_info->report);
    }
 
-   if ((rc = MQTTAsync_subscribe(client, info->report_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-      log_error("Failed to subscribe topic: %s\n", info->report_res);
+   if ((rc = MQTTAsync_subscribe(client, mqtt_info->report_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+      log_error("Failed to subscribe topic: %s", mqtt_info->report_res);
    } else {
-      log_debug("Successful subscribe topic: %s\n", info->report_res);
+      log_debug("Successful subscribe topic: %s", mqtt_info->report_res);
    }
+ 
 }
 
 
@@ -102,11 +105,12 @@ void mqtt_run(mqtt_info_t *info) {
    log_info("mqtt_run");
 
    int rc = 0;
+   mqtt_info = info;
    MQTTAsync client;
    MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
    MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
 
-   if ((rc = MQTTAsync_create(&client, info->host, info->id,
+   if ((rc = MQTTAsync_create(&client, mqtt_info->host, mqtt_info->id,
        MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTASYNC_SUCCESS) 
    {
       log_error("%d MQTTAsync_create to create %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
@@ -120,7 +124,6 @@ void mqtt_run(mqtt_info_t *info) {
    conn_opts.keepAliveInterval= 20;
    conn_opts.cleansession = 1;
 
-   ssl_opts.verify = 1;
    ssl_opts.enableServerCertAuth = 1;
    ssl_opts.trustStore = SSL_PATH;
    ssl_opts.sslVersion = MQTT_SSL_VERSION_TLS_1_2;
@@ -136,11 +139,80 @@ void mqtt_run(mqtt_info_t *info) {
       log_info("connect to MQTT Broker!");
    }
 
-   while (1);
-
 }
 
 #endif
+
+#if 1
+static void MQTT_subscribe(MQTTClient client, mqtt_info_t* info)
+{
+    int rc = 0;
+
+    if ((rc = MQTTClient_subscribe(client, info->report, 0)) != MQTTCLIENT_SUCCESS) {
+        log_error("Failed to subscribe, return code: %s(%d)", MQTTClient_strerror(rc), rc);
+    }
+    else {
+        log_info("Successful subscribe the topic: %s", info->report);
+    }
+
+    if ((rc = MQTTClient_subscribe(client, info->report_rt, 0)) != MQTTCLIENT_SUCCESS) {
+        log_error("Failed to subscribe, return code: %s(%d)", MQTTClient_strerror(rc), rc);
+    }
+    else {
+        log_info("Successful subscribe the topic: %s", info->report_rt);
+    }
+
+    if ((rc = MQTTClient_subscribe(client, info->report_res, 0)) != MQTTCLIENT_SUCCESS) {
+        log_error("Failed to subscribe, return code: %s(%d)", MQTTClient_strerror(rc), rc);
+    }
+    else {
+        log_info("Successful subscribe the topic: %s", info->report_res);
+    }
+
+    if ((rc = MQTTClient_subscribe(client, info->cmd_res, 0)) != MQTTCLIENT_SUCCESS) {
+        log_error("Failed to subscribe, return code: %s(%d)", MQTTClient_strerror(rc), rc);
+    }
+    else {
+        log_info("Successful subscribe the topic: %s", info->cmd_res);
+    }
+
+    if ((rc = MQTTClient_subscribe(client, info->query_res, 0)) != MQTTCLIENT_SUCCESS) {
+        log_error("Failed to subscribe, return code: %s(%d)", MQTTClient_strerror(rc), rc);
+    }
+    else {
+        log_info("Successful subscribe the topic: %s", info->query_res);
+    }
+
+    if ((rc = MQTTClient_subscribe(client, info->plugin_res, 0)) != MQTTCLIENT_SUCCESS) {
+        log_error("Failed to subscribe, return code: %s(%d)", MQTTClient_strerror(rc), rc);
+    }
+    else {
+        log_info("Successful subscribe the topic: %s", info->plugin_res);
+    }
+}
+
+static void MQTT_publish(MQTTClient client, mqtt_info_t* info)
+{
+    int                      rc     = 0;
+    MQTTClient_message       pubmsg = MQTTClient_message_initializer;
+    MQTTClient_deliveryToken token;
+
+    pubmsg.payload    = cJSON_PrintUnformatted(info->command[1]);
+    pubmsg.payloadlen = strlen(cJSON_PrintUnformatted(info->command[1]));
+    pubmsg.qos        = 0;
+    pubmsg.retained   = 0;
+
+    if ((rc = MQTTClient_publishMessage(client, info->query, &pubmsg, &token)) !=
+        MQTTCLIENT_SUCCESS) {
+        log_error("Failed to publish message: %s(%d)", MQTTClient_strerror(rc), rc);
+    }
+    else {
+        log_info("Successful published: %s, topicname: %s", pubmsg.payload, info->query);
+    }
+
+    rc = MQTTClient_waitForCompletion(client, token, 100000);
+    log_info("Message with delivery token %d delivered", token);
+}
 
 void mqtt_run(mqtt_info_t* info)
 {
@@ -166,7 +238,7 @@ void mqtt_run(mqtt_info_t* info)
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession      = 1;
 
-    ssl_opts.verify               = 1;
+    //  ssl_opts.verify               = 1; // verify开启就无法单向认证
     ssl_opts.enableServerCertAuth = 1;
     ssl_opts.trustStore           = SSL_PATH;
     ssl_opts.sslVersion           = MQTT_SSL_VERSION_TLS_1_2;
@@ -177,9 +249,14 @@ void mqtt_run(mqtt_info_t* info)
         log_error("Failed to connect, return code: %s(%d)", MQTTClient_strerror(rc), rc);
     }
 
-    if ((rc = MQTTClient_subscribe(client, info->report, 0)) != MQTTCLIENT_SUCCESS) {
-        log_error("Failed to subscribe, return code: %s(%d)", MQTTClient_strerror(rc), rc);
-    }
+    MQTT_subscribe(client, info);
+
+    MQTT_publish(client, info);
+
+   //  if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS) {
+   //      log_error("Failed to disconnect, return %d(%s)", MQTTClient_strerror(rc), rc);
+   //  }
 
     MQTTClient_destroy(&client);
 }
+#endif
