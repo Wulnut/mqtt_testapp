@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-mqtt_info_t mit;
+mqtt_info_t mqtt_info;
 
 int main(int argc, char** argv)
 {
@@ -15,11 +15,11 @@ int main(int argc, char** argv)
 
     opt_init(argc, argv);
 
-    config_init(&mit);
+    config_init(&mqtt_info);
 
-    read_test_conf(&mit, "../conf/tianyi.conf");
+    read_test_conf(&mqtt_info, "../conf/tianyi.conf");
 
-    mqtt_run(&mit);
+    mqtt_run(&mqtt_info);
 
     return 0;
 }

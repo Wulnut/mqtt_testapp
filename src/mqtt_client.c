@@ -253,9 +253,9 @@ void mqtt_run(mqtt_info_t* info)
 
     MQTT_publish(client, info);
 
-   //  if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS) {
-   //      log_error("Failed to disconnect, return %d(%s)", MQTTClient_strerror(rc), rc);
-   //  }
+    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS) {
+        log_error("Failed to disconnect, return %d(%s)", MQTTClient_strerror(rc), rc);
+    }
 
     MQTTClient_destroy(&client);
 }
