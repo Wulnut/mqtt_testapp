@@ -21,5 +21,7 @@ int main(int argc, char** argv)
 
     mqtt_run(&mqtt_info);
 
+    while (1);
+
     return 0;
 }
