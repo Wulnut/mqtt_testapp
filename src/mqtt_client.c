@@ -1,13 +1,19 @@
 #include "mqtt_client.h"
 #include "cJSON.h"
 #include "log.h"
-#include <MQTTAsync.h>
+#include "util.h"
 #include <MQTTClient.h>
 #include <MQTTClientPersistence.h>
+#include <alloca.h>
+#include <bits/pthreadtypes.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-#if 1
+#if 0
 static mqtt_info_t* mqtt_info;
 
 static void on_send_failure(void* context, MQTTAsync_failureData* response)
@@ -110,7 +116,8 @@ static void on_connect_failure(void* context, MQTTAsync_failureData* response)
 
 #endif
 
-static int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* message)
+#if 0
+static int on_message(void* context, char* topic, int topic_len, MQTTClient_message* message)
 {
 
     char* payload = message->payload;
@@ -129,9 +136,9 @@ static int on_message(void* context, char* topic, int topic_len, MQTTAsync_messa
 static void conn_lost(void* context, char* cause)
 {
 
-    MQTTAsync                client    = (MQTTAsync)context;
-    MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-    int                      rc        = 0;
+    MQTTClient                client    = (MQTTClient)context;
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    int                       rc        = 0;
 
     log_error("Connection lost cause: %s", cause);
     log_error("Reconnecting");
@@ -139,12 +146,13 @@ static void conn_lost(void* context, char* cause)
     conn_opts.keepAliveInterval = 30;
     conn_opts.cleansession      = 1;
 
-    if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
         log_error("Failed to start connect, return code %d", rc);
     }
 }
+#endif
 
-#if 1
+#if 0
 
 void mqtt_run(mqtt_info_t* info)
 {
@@ -262,11 +270,17 @@ static void MQTT_publish(MQTTClient client, mqtt_info_t* info)
     log_info("Message with delivery token %d delivered", token);
 }
 
+static void delivery_complete(void* context, MQTTClient_deliveryToken dt)
+{
+    printf("publish topic success, token  %d \n", dt);
+}
+
 void mqtt_run(mqtt_info_t* info)
 {
     log_info("mqtt run");
 
     int                       rc = 0;
+    int                       ch = 0;
     MQTTClient                client;
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     MQTTClient_SSLOptions     ssl_opts  = MQTTClient_SSLOptions_initializer;
@@ -279,13 +293,13 @@ void mqtt_run(mqtt_info_t* info)
         log_error("Failed to create client, return code: %s(%d)", MQTTClient_strerror(rc), rc);
     }
 
-    if ((rc = MQTTClient_setCallbacks(client, NULL, conn_lost, on_message, NULL)) !=
+    if ((rc = MQTTClient_setCallbacks(client, NULL, conn_lost, on_message, delivery_complete)) !=
         MQTTCLIENT_SUCCESS) {
         log_error("Failed to callbacks, return code: %s(%d)", MQTTClient_strerror(rc), rc);
     }
 
     conn_opts.MQTTVersion       = MQTTVERSION_3_1_1;
-    conn_opts.keepAliveInterval = 20;
+    conn_opts.keepAliveInterval = 30;
     conn_opts.cleansession      = 1;
 
     //  ssl_opts.verify               = 1; // verify开启就无法单向认证
@@ -303,6 +317,11 @@ void mqtt_run(mqtt_info_t* info)
 
     MQTT_publish(client, info);
 
+    printf("\nPress Q or q + <Enter> to quite\n");
+    do {
+        ch = getchar();
+    } while (ch != 'Q' && ch != 'q');
+
     if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS) {
         log_error("Failed to disconnect, return %d(%s)", MQTTClient_strerror(rc), rc);
     }
@@ -310,3 +329,15 @@ void mqtt_run(mqtt_info_t* info)
     MQTTClient_destroy(&client);
 }
 #endif
+
+void mqtt_run(mqtt_info_t *info)
+{
+    log_info("mqtt run");
+    char *res = (char *)calloc(1, sizeof(char));
+
+    if (execute_cmd("ls -l", &res) == 1 && res != NULL) {
+        log_info("execute_cmd successful: %s", res);
+    }
+
+    free(res);
+}
