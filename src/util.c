@@ -76,7 +76,7 @@ void config_init(mqtt_info_t* mit)
 
             sscanf(value, "%63[^:]:%7s", tmp, mit->port);
 
-            if (sprintf(mit->address, "ssl://%s", tmp) < 0) {
+            if (sprintf(mit->address, "mqtts://%s", tmp) < 0) {
                 log_error("address error");
             }
 
@@ -267,6 +267,31 @@ int read_test_conf(mqtt_info_t* info, char* path)
             log_debug("report_rt: %s", info->report_rt);
         }
     }
+
+    return 1;
+}
+
+int execute_cmd(const char* command, char **result)
+{
+    char  *res;
+    char  buf[1024];
+    FILE* fp = NULL;
+
+    res = (char *)malloc(1024 * sizeof(char));
+
+    if ((fp = popen(command, "r")) == NULL) {
+        log_error("popen error!");
+        return -1;
+    }
+
+    while (fgets(buf, sizeof buf, fp)) {
+        strcat(res, buf);
+    }
+
+    pclose(fp);
+    log_debug("result: \n%s", res);
+
+    *result = res;
 
     return 1;
 }

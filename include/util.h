@@ -20,5 +20,6 @@ void config_init(mqtt_info_t *mit);
 void process_signal_init(void);
 void opt_init(int argc, char **argv);
 int read_test_conf(mqtt_info_t *info, char *path);
+int execute_cmd(const char *command, char **result);
 
 #endif
