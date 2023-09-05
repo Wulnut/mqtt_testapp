@@ -2,10 +2,13 @@
 #include "cJSON.h"
 #include "log.h"
 #include "util.h"
+#include <MQTTAsync.h>
 #include <MQTTClient.h>
 #include <MQTTClientPersistence.h>
+#include <MQTTReasonCodes.h>
 #include <alloca.h>
 #include <bits/pthreadtypes.h>
+#include <mosquitto.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -44,48 +47,6 @@ static void on_connect(void* context, MQTTAsync_successData* response)
 
     log_info("Successful connection");
 
-    if ((rc = MQTTAsync_subscribe(client, mqtt_info->query_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-        log_error("Failed to subscribe topic: %s", mqtt_info->query_res);
-    }
-    else {
-        log_debug("Successful subscribe topic: %s", mqtt_info->query_res);
-    }
-
-    if ((rc = MQTTAsync_subscribe(client, mqtt_info->cmd_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-        log_error("Failed to subscribe topic: %s", mqtt_info->cmd_res);
-    }
-    else {
-        log_debug("Successful subscribe topic: %s", mqtt_info->cmd_res);
-    }
-
-    if ((rc = MQTTAsync_subscribe(client, mqtt_info->plugin_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-        log_error("Failed to subscribe topic: %s", mqtt_info->plugin_res);
-    }
-    else {
-        log_debug("Successful subscribe topic: %s", mqtt_info->plugin_res);
-    }
-
-    if ((rc = MQTTAsync_subscribe(client, mqtt_info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
-        log_error("Failed to subscribe topic: %s", mqtt_info->report);
-    }
-    else {
-        log_debug("Successful subscribe topic: %s", mqtt_info->report);
-    }
-
-    if ((rc = MQTTAsync_subscribe(client, mqtt_info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
-        log_error("Failed to subscribe topic: %s", mqtt_info->report);
-    }
-    else {
-        log_debug("Successful subscribe topic: %s", mqtt_info->report);
-    }
-
-    if ((rc = MQTTAsync_subscribe(client, mqtt_info->report_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
-        log_error("Failed to subscribe topic: %s", mqtt_info->report_res);
-    }
-    else {
-        log_debug("Successful subscribe topic: %s", mqtt_info->report_res);
-    }
-
     pubmsg.payload    = cJSON_PrintUnformatted(mqtt_info->command[1]);
     pubmsg.payloadlen = strlen(cJSON_PrintUnformatted(mqtt_info->command[1]));
     pubmsg.qos        = 0;
@@ -95,9 +56,6 @@ static void on_connect(void* context, MQTTAsync_successData* response)
     opts.onFailure = on_send_failure;
     opts.context   = client;
 
-    log_debug("query: %s", mqtt_info->query);
-    log_debug("payload: %s", pubmsg.payload);
-
     if ((rc = MQTTAsync_sendMessage(client, mqtt_info->query, &pubmsg, &opts)) !=
         MQTTASYNC_SUCCESS) {
         log_error("Failed to send message");
@@ -105,19 +63,66 @@ static void on_connect(void* context, MQTTAsync_successData* response)
     else {
         log_debug("send message");
     }
+
+    // MQTTAsync                 client = (MQTTAsync)context;
+    // MQTTAsync_responseOptions opts   = MQTTAsync_responseOptions_initializer;
+    // int                       rc     = 0;
+
+    // log_info("Successful reconnection");
+
+    // if ((rc = MQTTAsync_subscribe(client, mqtt_info->query_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+    //     log_error("Failed to subscribe topic: %s", mqtt_info->query_res);
+    // }
+    // else {
+    //     log_debug("Successful subscribe topic: %s", mqtt_info->query_res);
+    // }
+
+    // if ((rc = MQTTAsync_subscribe(client, mqtt_info->cmd_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+    //     log_error("Failed to subscribe topic: %s", mqtt_info->cmd_res);
+    // }
+    // else {
+    //     log_debug("Successful subscribe topic: %s", mqtt_info->cmd_res);
+    // }
+
+    // if ((rc = MQTTAsync_subscribe(client, mqtt_info->plugin_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+    //     log_error("Failed to subscribe topic: %s", mqtt_info->plugin_res);
+    // }
+    // else {
+    //     log_debug("Successful subscribe topic: %s", mqtt_info->plugin_res);
+    // }
+
+    // if ((rc = MQTTAsync_subscribe(client, mqtt_info->report, 0, &opts)) != MQTTASYNC_SUCCESS) {
+    //     log_error("Failed to subscribe topic: %s", mqtt_info->report);
+    // }
+    // else {
+    //     log_debug("Successful subscribe topic: %s", mqtt_info->report);
+    // }
+
+    // if ((rc = MQTTAsync_subscribe(client, mqtt_info->report_rt, 0, &opts)) != MQTTASYNC_SUCCESS) {
+    //     log_error("Failed to subscribe topic: %s", mqtt_info->report_rt);
+    // }
+    // else {
+    //     log_debug("Successful subscribe topic: %s", mqtt_info->report_rt);
+    // }
+
+    // if ((rc = MQTTAsync_subscribe(client, mqtt_info->report_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
+    //     log_error("Failed to subscribe topic: %s", mqtt_info->report_res);
+    // }
+    // else {
+    //     log_debug("%lu Successful subscribe topic: %s", pthread_self(), mqtt_info->report_res);
+    // }
 }
 
 
 static void on_connect_failure(void* context, MQTTAsync_failureData* response)
 {
-
     log_info("Failure connected, rc %d", response ? response->code : 0);
 }
 
 #endif
 
 #if 0
-static int on_message(void* context, char* topic, int topic_len, MQTTClient_message* message)
+static int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* message)
 {
 
     char* payload = message->payload;
@@ -136,9 +141,9 @@ static int on_message(void* context, char* topic, int topic_len, MQTTClient_mess
 static void conn_lost(void* context, char* cause)
 {
 
-    MQTTClient                client    = (MQTTClient)context;
-    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-    int                       rc        = 0;
+    MQTTAsync                client    = (MQTTAsync)context;
+    MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+    int                      rc        = 0;
 
     log_error("Connection lost cause: %s", cause);
     log_error("Reconnecting");
@@ -146,10 +151,36 @@ static void conn_lost(void* context, char* cause)
     conn_opts.keepAliveInterval = 30;
     conn_opts.cleansession      = 1;
 
-    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
+    if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
         log_error("Failed to start connect, return code %d", rc);
     }
 }
+
+static void on_reconnect(void* context, char* cause)
+{
+    // int                       rc     = 0;
+    // MQTTAsync                 client = (MQTTAsync)context;
+    // MQTTAsync_responseOptions opts   = MQTTAsync_responseOptions_initializer;
+    // MQTTAsync_message         pubmsg = MQTTAsync_message_initializer;
+
+    // pubmsg.payload    = cJSON_PrintUnformatted(mqtt_info->command[1]);
+    // pubmsg.payloadlen = strlen(cJSON_PrintUnformatted(mqtt_info->command[1]));
+    // pubmsg.qos        = 0;
+    // pubmsg.retained   = 0;
+
+    // opts.onSuccess = on_send;
+    // opts.onFailure = on_send_failure;
+    // opts.context   = client;
+
+    // if ((rc = MQTTAsync_sendMessage(client, mqtt_info->query, &pubmsg, &opts)) !=
+    //     MQTTASYNC_SUCCESS) {
+    //     log_error("Failed to send message %s(%d)", MQTTAsync_strerror(rc), rc);
+    // }
+    // else {
+        log_debug("%lu send message", pthread_self());
+    // }
+}
+
 #endif
 
 #if 0
@@ -176,9 +207,12 @@ void mqtt_run(mqtt_info_t* info)
         log_error("%d Failed to set callback %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
     }
 
-    conn_opts.MQTTVersion       = MQTTVERSION_3_1_1;
-    conn_opts.keepAliveInterval = 20;
-    conn_opts.cleansession      = 1;
+    conn_opts.MQTTVersion        = MQTTVERSION_3_1_1;
+    conn_opts.keepAliveInterval  = 60;
+    conn_opts.cleansession       = 1;
+    conn_opts.automaticReconnect = 1;
+    conn_opts.minRetryInterval   = 2;
+    conn_opts.maxRetryInterval   = 365 * 24 * 60 * 60;
 
     ssl_opts.enableServerCertAuth = 1;
     ssl_opts.trustStore           = SSL_PATH;
@@ -189,11 +223,15 @@ void mqtt_run(mqtt_info_t* info)
     conn_opts.onFailure = on_connect_failure;
     conn_opts.context   = client;
 
+    if ((rc = MQTTAsync_setConnected(client, client, on_reconnect)) != MQTTASYNC_SUCCESS) {
+        log_error("%d Failed to setconnect %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
+    }
+
     if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
         log_error("%d Failed to connect %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
     }
     else {
-        log_info("connect to MQTT Broker!");
+        log_info("%lu connect to MQTT Broker!", pthread_self());
     }
 }
 
@@ -330,14 +368,38 @@ void mqtt_run(mqtt_info_t* info)
 }
 #endif
 
-void mqtt_run(mqtt_info_t *info)
+#if 1
+
+void mqtt_run(mqtt_info_t* info)
 {
-    log_info("mqtt run");
-    char *res = (char *)calloc(1, sizeof(char));
+   int rc = 0;
+   struct mosquitto *mosq = NULL; 
 
-    if (execute_cmd("ls -l", &res) == 1 && res != NULL) {
-        log_info("execute_cmd successful: %s", res);
-    }
+   mosq = mosquitto_new(info->id, true, NULL);
 
-    free(res);
+   	if (mosq == NULL) {
+
+		log_error("create client failed .... \n");
+
+	}
+
+	if ((rc = mosquitto_tls_set(mosq, SSL_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
+
+		log_error("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+
+	}
+
+	if ((rc = mosquitto_tls_opts_set(mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
+
+		log_error("Failed to mosquitto_tls_opts_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+
+	}
+
+    if ((rc = mosquitto_connect_async(mosq, info->address, atoi(info->port), 30)) != MOSQ_ERR_SUCCESS) {
+
+		log_error("Failed to connect: %s (%d)\n", mosquitto_strerror(rc), rc);
+		
+	}
 }
+
+#endif
