@@ -25,6 +25,6 @@ typedef struct cts_mqtt_client {
 	cJSON *command[128];
 	} mqtt_info_t;
 
-void mqtt_run(mqtt_info_t *mit);
+void mqtt_run(mqtt_info_t *info);
 
 #endif //MQTT_CLIENT
