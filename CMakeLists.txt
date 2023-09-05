@@ -31,4 +31,10 @@ set_target_properties (testapp_shared PROPERTIES OUTPUT_NAME "testapp")
 set_target_properties (testapp_static PROPERTIES OUTPUT_NAME "testapp")
 
 add_executable(testapp ${SRC_LIST})
-TARGET_LINK_LIBRARIES(testapp ssl crypto paho-mqtt3cs pthread)
+
+# 查找libubox
+find_library(UBOX_LIBRARY NAMES ubox PATHS /usr/local/lib)
+
+include_directories(/usr/local/include)
+
+TARGET_LINK_LIBRARIES(testapp ssl crypto paho-mqtt3as paho-mqtt3cs pthread ${UBOX_LIBRARY} mosquitto)
