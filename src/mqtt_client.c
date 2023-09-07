@@ -370,36 +370,98 @@ void mqtt_run(mqtt_info_t* info)
 
 #if 1
 
+mqtt_info_t* info_t;
+
+void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
+{
+    int rc = 0;
+    int payloadlen = strlen(cJSON_PrintUnformatted(info_t->command[1]));
+    char *payload = cJSON_PrintUnformatted(info_t->command[1]);
+
+    printf("on_connect: %s\n", mosquitto_connack_string(reason_code));
+    if (reason_code != 0) {
+        mosquitto_disconnect(mosq);
+    }
+
+    rc = mosquitto_subscribe(mosq, NULL, info_t->query_res, 0);
+    if (rc != MOSQ_ERR_SUCCESS) {
+        log_error("Error subscribing: %s\n", mosquitto_strerror(rc));
+        mosquitto_disconnect(mosq);
+    }
+
+    rc = mosquitto_publish(mosq, NULL, info_t->query, payloadlen, payload, 0, 0);
+    if (rc != MOSQ_ERR_SUCCESS) {
+        log_error("Error publishing: %s\n", mosquitto_strerror(rc));
+        mosquitto_disconnect(mosq);
+    }
+}
+
+// 当代理在响应订阅发送SUBACK时调用回调
+void on_subscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos)
+{
+    int  i;
+    bool have_subscription = false;
+
+    for (i = 0; i < qos_count; i++) {
+        printf("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
+        if (granted_qos[i] <= 2) {
+            have_subscription = true;
+        }
+    }
+    if (have_subscription == false) {
+        fprintf(stderr, "Error: All subscriptions rejected.\n");
+        mosquitto_disconnect(mosq);
+    }
+}
+
+// 当客户端收到消息时调用回调该函数
+void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* msg)
+{
+    // 打印有效载荷
+    printf("%s %d %s\n", msg->topic, msg->qos, (char*)msg->payload);
+}
+
+void on_log(struct mosquitto* mosq, void* obj, int rc, const char* s)
+{
+    log_info("[%lu]%s", pthread_self(), s);
+}
+
 void mqtt_run(mqtt_info_t* info)
 {
-   int rc = 0;
-   struct mosquitto *mosq = NULL; 
+    int               rc   = 0;
+    struct mosquitto* mosq = NULL;
+    info_t                 = info;
+    mosquitto_lib_init();
 
-   mosq = mosquitto_new(info->id, true, NULL);
+    mosq = mosquitto_new(info->id, true, NULL);
 
-   	if (mosq == NULL) {
+    if (mosq == NULL) {
 
-		log_error("create client failed .... \n");
+        log_error("create client failed ....");
+    }
 
-	}
+    if ((rc = mosquitto_tls_set(mosq, SSL_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
 
-	if ((rc = mosquitto_tls_set(mosq, SSL_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
+        log_error("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+    }
 
-		log_error("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+    if ((rc = mosquitto_tls_opts_set(mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
 
-	}
+        log_error("Failed to mosquitto_tls_opts_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+    }
 
-	if ((rc = mosquitto_tls_opts_set(mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
+    mosquitto_connect_callback_set(mosq, on_connect);
+    mosquitto_log_callback_set(mosq, on_log);
+    mosquitto_subscribe_callback_set(mosq, on_subscribe);
+    mosquitto_message_callback_set(mosq, on_message);
 
-		log_error("Failed to mosquitto_tls_opts_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+    if ((rc = mosquitto_connect_async(mosq, info->address, atoi(info->port), 30)) !=
+        MOSQ_ERR_SUCCESS) {
 
-	}
+        log_error("Failed to connect: %s (%d)\n", mosquitto_strerror(rc), rc);
+    }
 
-    if ((rc = mosquitto_connect_async(mosq, info->address, atoi(info->port), 30)) != MOSQ_ERR_SUCCESS) {
-
-		log_error("Failed to connect: %s (%d)\n", mosquitto_strerror(rc), rc);
-		
-	}
+    mosquitto_loop_start(mosq);
 }
 
 #endif
