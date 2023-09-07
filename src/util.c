@@ -76,7 +76,7 @@ void config_init(mqtt_info_t* mit)
 
             sscanf(value, "%63[^:]:%7s", tmp, mit->port);
 
-            if (sprintf(mit->address, "ssl://%s", tmp) < 0) {
+            if (sprintf(mit->address, "%s", tmp) < 0) {
                 log_error("address error");
             }
 
