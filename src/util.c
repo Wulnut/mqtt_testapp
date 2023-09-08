@@ -4,6 +4,7 @@
 #include "mqtt_client.h"
 #include <bits/types/FILE.h>
 #include <mosquitto.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -37,10 +38,9 @@ void progress_bar(int flag)
     buff[count] = '>';
 }
 
-void config_init(mqtt_info_t* mit)
+void config_init(mqtt_info_t* info)
 {
-
-    log_info("testapp init start");
+    log_info("[%lu]testapp init start", pthread_self());
 
     FILE* fp = NULL;
     char  line[MAX_LINE_LEN];
@@ -56,9 +56,12 @@ void config_init(mqtt_info_t* mit)
 
     while (fgets(line, MAX_LINE_LEN, fp) != NULL) {
 
-        char key[MAX_LINE_LEN], value[MAX_LINE_LEN], tmp[MAX_LINE_LEN];
+        char key[MAX_LINE_LEN], value[MAX_LINE_LEN], tmp[MAX_LINE_LEN], *ptr;
         memset(key, '\0', MAX_LINE_LEN);
         memset(value, '\0', MAX_LINE_LEN);
+
+        ptr = strchr(line, '\r');
+        if (ptr) *ptr = '\0';
 
         if (line[0] == '#' || (line[0] == '/' && line[1] == '/') || line[0] == '\0') {
             continue;
@@ -74,24 +77,41 @@ void config_init(mqtt_info_t* mit)
 
         if (strcmp(key, "host") == 0) {
 
-            sscanf(value, "%63[^:]:%7s", tmp, mit->port);
+            sscanf(value, "%63[^:]:%7s", tmp, info->port);
 
-            if (sprintf(mit->address, "%s", tmp) < 0) {
+            if (sprintf(info->address, "mqtts://%s", tmp) < 0) {
                 log_error("address error");
             }
 
-            if (sprintf(mit->host, "%s:%s", mit->address, mit->port) < 0) {
+            if (sprintf(info->host, "%s:%s", info->address, info->port) < 0) {
                 log_error("host error");
             }
 
-            log_debug("%s %s", __func__, mit->host);
+            log_debug("%s %s", __func__, info->host);
+            continue;
         }
 
         if (strcmp(key, "id") == 0) {
 
-            strncpy(mit->id, value, strlen(value) + 1);
+            strncpy(info->id, value, strlen(value) + 1);
 
-            log_debug("%s id:%s", __func__, mit->id);
+            log_debug("%s id:%s", __func__, info->id);
+            continue;
+        }
+
+        if (strcmp(key, "username") == 0) {
+
+            strncpy(info->username, value, strlen(value) + 1);
+
+            log_debug("%s username:%s", __func__, info->username);
+            continue;
+        }
+
+        if (strcmp(key, "password") == 0) {
+
+            strncpy(info->passowrd, value, strlen(value) + 1);
+
+            log_debug("%s password:%s, value:%s", __func__, info->passowrd, value);
         }
     }
 
@@ -152,7 +172,6 @@ err:
 
 int read_test_conf(mqtt_info_t* info, char* path)
 {
-
     log_info("read test conf: %s", path);
 
     int   i  = 0;
@@ -172,7 +191,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
 
     while (fgets(line, MAX_LINE_LEN, fp) != NULL) {
 
-        char key[MAX_LINE_LEN], value[MAX_LINE_LEN];
+        char key[MAX_LINE_LEN], value[MAX_LINE_LEN], *ptr;
         memset(key, '\0', MAX_LINE_LEN);
         memset(value, '\0', MAX_LINE_LEN);
 
@@ -180,7 +199,10 @@ int read_test_conf(mqtt_info_t* info, char* path)
             continue;
         }
 
-        if (strstr(line, "code") != NULL) {
+        ptr = strchr(line, '\r');
+        if (ptr) *ptr = '\0';
+
+        if (strstr(line, "mac") != NULL) {
 
             info->command[i] = cJSON_Parse(line);
 
@@ -209,6 +231,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->cmd, value, strlen(value) + 1);
 
             log_debug("cmd: %s", info->cmd);
+            continue;
         }
 
         if (strcmp(key, "cmd_res") == 0) {
@@ -216,6 +239,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->cmd_res, value, strlen(value) + 1);
 
             log_debug("cmd_res: %s", info->cmd_res);
+            continue;
         }
 
         if (strcmp(key, "plugin") == 0) {
@@ -223,6 +247,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->plugin, value, strlen(value) + 1);
 
             log_debug("plugin: %s", info->plugin);
+            continue;
         }
 
         if (strcmp(key, "plugin_res") == 0) {
@@ -230,6 +255,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->plugin_res, value, strlen(value) + 1);
 
             log_debug("plugin_res: %s", info->plugin_res);
+            continue;
         }
 
         if (strcmp(key, "query") == 0) {
@@ -237,6 +263,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->query, value, strlen(value) + 1);
 
             log_debug("query: %s", info->query);
+            continue;
         }
 
         if (strcmp(key, "query_res") == 0) {
@@ -244,6 +271,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->query_res, value, strlen(value) + 1);
 
             log_debug("query_res: %s", info->query_res);
+            continue;
         }
 
         if (strcmp(key, "report") == 0) {
@@ -251,6 +279,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->report, value, strlen(value) + 1);
 
             log_debug("report: %s", info->report);
+            continue;
         }
 
         if (strcmp(key, "report_res") == 0) {
@@ -258,6 +287,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->report_res, value, strlen(value) + 1);
 
             log_debug("report_res: %s", info->report_res);
+            continue;
         }
 
         if (strcmp(key, "report_rt") == 0) {
@@ -265,6 +295,22 @@ int read_test_conf(mqtt_info_t* info, char* path)
             strncpy(info->report_rt, value, strlen(value) + 1);
 
             log_debug("report_rt: %s", info->report_rt);
+            continue;
+        }
+
+        if (strcmp(key, "test") == 0) {
+            
+            strncpy(info->test, value, strlen(value) + 1);
+
+            log_debug("test: %s", info->test);
+            continue;
+        }
+
+        if (strcmp(key, "test_res") == 0) {
+
+            strncpy(info->test_res, value, strlen(value) + 1);
+
+            log_debug("test_res: %s", info->test_res);
         }
     }
 
