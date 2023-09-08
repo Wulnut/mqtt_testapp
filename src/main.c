@@ -11,7 +11,7 @@ mqtt_info_t mqtt_info;
 
 int main(int argc, char** argv)
 {
-    log_set_level(LOG_INFO);
+    log_set_level(LOG_DEBUG);
 
     process_signal_init();
 
@@ -23,7 +23,9 @@ int main(int argc, char** argv)
 
     config_init(&mqtt_info);
 
-    read_test_conf(&mqtt_info, "../conf/tianyi.conf");
+    read_test_conf(&mqtt_info, "../conf/tianyi.conf"); 
+
+    read_result_conf("../conf/result.conf");
 
     mqtt_run(&mqtt_info);
 

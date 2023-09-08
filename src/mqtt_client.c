@@ -18,7 +18,7 @@
 
 #if 1
 static mqtt_info_t* mqtt_info;
-static int          count = 1;
+static int          count = 0;
 
 static void on_send_failure(void* context, MQTTAsync_failureData* response)
 {
@@ -130,9 +130,8 @@ static void mqtt_send()
     opts.onFailure = on_send_failure;
     opts.context   = client;
 
-    if (mqtt_info->cmd_counts < count) count = 0;
-
-    sleep(10);
+    // BUG 用例全部测完 程序崩溃 reboot操作无法成功
+    if (mqtt_info->cmd_counts == count) count = 0;
 
     if ((rc = MQTTAsync_sendMessage(client, mqtt_info->query, &pubmsg, &opts)) !=
         MQTTASYNC_SUCCESS) {
@@ -154,10 +153,10 @@ int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* mes
 
     log_debug("(testapp) <- Message receive payload: %s, topic: %s", payload, topic);
 
-    if (payload_check(payload, topic) == 1) {
-        log_info("(testapp) ...... √ %d/%d", count - 1, mqtt_info->cmd_counts);
+    if (payload_check(payload, topic, count - 1) == 1) {
+        log_info("(testapp) ...... ✅ %d/%d", count, mqtt_info->cmd_counts);
     } else {
-        log_error("(testapp) ...... × %d/%d", count - 1, mqtt_info->cmd_counts);
+        log_error("(testapp) ...... ❎ %d/%d", count, mqtt_info->cmd_counts);
     }
 
     mqtt_send();

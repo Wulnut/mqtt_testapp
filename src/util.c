@@ -11,10 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-int   count;
-char  buff[MAXSIZE];
-char* lable = "\\/\\-\\/";
-static test_t teatapp;
+int           count;
+char          buff[MAXSIZE];
+char*         lable = "\\/\\-\\/";
+static test_t testapps;
 
 #ifndef ARRAY_SIZE
 #    define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -219,8 +219,8 @@ int read_test_conf(mqtt_info_t* info, char* path)
             ++i;
         }
 
-        info->cmd_counts = i;
-        teatapp.total = i;
+        info->cmd_counts      = i;
+        testapps.intput_total = i;
 
         if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
             continue;
@@ -303,7 +303,7 @@ int read_test_conf(mqtt_info_t* info, char* path)
         }
 
         if (strcmp(key, "test") == 0) {
-            
+
             strncpy(info->test, value, strlen(value) + 1);
 
             log_debug("test: %s", info->test);
@@ -321,13 +321,67 @@ int read_test_conf(mqtt_info_t* info, char* path)
     return 1;
 }
 
-int execute_cmd(const char* command, char **result)
+int read_result_conf(char* path)
 {
-    char  *res;
+    log_info("read test conf: %s", path);
+
+    int   i  = 0;
+    FILE* fp = NULL;
+    char  line[MAX_LINE_LEN];
+
+    memset(line, '\0', sizeof(line));
+
+    fp = fopen(path, "r");
+
+    if (fp == NULL) {
+
+        log_error("%s open failed!", path);
+
+        return -1;
+    }
+
+    while (fgets(line, MAX_LINE_LEN, fp) != NULL) {
+
+        char key[MAX_LINE_LEN], value[MAX_LINE_LEN], *ptr;
+        memset(key, '\0', MAX_LINE_LEN);
+        memset(value, '\0', MAX_LINE_LEN);
+
+        if (line[0] == '#' || (line[0] == '/' && line[1] == '/') || line[0] == '\0') {
+            continue;
+        }
+
+        ptr = strchr(line, '\r');
+        if (ptr) *ptr = '\0';
+
+        if (strstr(line, "mac") != NULL) {
+
+            testapps.result[i] = cJSON_Parse(line);
+
+            if (testapps.result[i] == NULL) {
+
+                log_error("command read failed\n");
+
+                return -2;
+            }
+
+            log_debug("result[%d]: %s", i + 1, cJSON_PrintUnformatted(testapps.result[i]));
+
+            ++i;
+        }
+
+        testapps.output_total = i;
+    }
+
+    return 1;
+}
+
+int execute_cmd(const char* command, char** result)
+{
+    char* res;
     char  buf[1024];
     FILE* fp = NULL;
 
-    res = (char *)malloc(1024 * sizeof(char));
+    res = (char*)malloc(1024 * sizeof(char));
 
     if ((fp = popen(command, "r")) == NULL) {
         log_error("popen error!");
@@ -346,8 +400,79 @@ int execute_cmd(const char* command, char **result)
     return 1;
 }
 
-int payload_check(char *payload, char *topic)
+static int is_valid_json(const char* str)
 {
-    // TODO 实现参数判断
+    cJSON* json = cJSON_Parse(str);
+
+    if (json) {
+
+        cJSON_Delete(json);
+
+        return 1;
+    }
+
+    return 0;
+}
+
+static int json_equal(cJSON* json_1, cJSON* json_2)
+{
+    if (!json_1 || !json_2) return 0;
+    // 检查两个JSON对象的类型是否相同
+    if (json_1->type != json_2->type) return 0;
+
+    switch (json_1->type) {
+        case cJSON_Object:
+        {
+            cJSON* child1 = json_1->child;
+            cJSON* child2 = json_2->child;
+            while (child1 && child2) {
+                if (!json_equal(child1, child2)) return 0;
+                child1 = child1->next;
+                child2 = child2->next;
+            }
+            // 确保两个对象都遍历完
+            if (child1 || child2) return 0;
+            break;
+        }
+        case cJSON_Array:
+        {
+            cJSON* child1 = json_1->child;
+            cJSON* child2 = json_2->child;
+            while (child1 && child2) {
+                if (!json_equal(child1, child2)) return 0;
+                child1 = child1->next;
+                child2 = child2->next;
+            }
+            if (child1 || child2) return 0;
+            break;
+        }
+        case cJSON_String:
+            if (strcmp(json_1->valuestring, json_2->valuestring) != 0) return 0;
+            break;
+        case cJSON_Number:
+            if (json_1->valuedouble != json_2->valuedouble) return 0;
+            break;
+        case cJSON_True:
+        case cJSON_False:
+        case cJSON_NULL: break;   // 已经通过type检查
+        default: return 0;        // 未知类型
+    }
+
+    return 1;
+}
+
+int payload_check(char* payload, char* topic, int idx)
+{
+    int    count = idx;
+    cJSON* json  = NULL;
+
+    if (payload == NULL && topic == NULL && testapps.result[count] == NULL) return 0;
+
+    if (is_valid_json(payload)) return -1;
+
+    json = cJSON_Parse(payload);
+
+    if (json_equal(json, testapps.result[count])) return -2;
+
     return 1;
 }
