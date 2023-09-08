@@ -14,6 +14,7 @@
 int   count;
 char  buff[MAXSIZE];
 char* lable = "\\/\\-\\/";
+static test_t teatapp;
 
 #ifndef ARRAY_SIZE
 #    define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -40,7 +41,7 @@ void progress_bar(int flag)
 
 void config_init(mqtt_info_t* info)
 {
-    log_info("[%lu]testapp init start", pthread_self());
+    log_info("testapp init start");
 
     FILE* fp = NULL;
     char  line[MAX_LINE_LEN];
@@ -218,6 +219,9 @@ int read_test_conf(mqtt_info_t* info, char* path)
             ++i;
         }
 
+        info->cmd_counts = i;
+        teatapp.total = i;
+
         if (sscanf(line, "%[^=] = %[^\n]", key, value) != 2) {
             continue;
         }
@@ -339,5 +343,11 @@ int execute_cmd(const char* command, char **result)
 
     *result = res;
 
+    return 1;
+}
+
+int payload_check(char *payload, char *topic)
+{
+    // TODO 实现参数判断
     return 1;
 }
