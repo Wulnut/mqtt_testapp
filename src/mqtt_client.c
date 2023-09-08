@@ -18,6 +18,7 @@
 
 #if 1
 static mqtt_info_t* mqtt_info;
+static int          count = 1;
 
 static void on_send_failure(void* context, MQTTAsync_failureData* response)
 {
@@ -34,7 +35,7 @@ static void on_send_failure(void* context, MQTTAsync_failureData* response)
 
 static void on_send(void* context, MQTTAsync_successData* response)
 {
-    log_info("(testapp) -> Message with token value %d delivery confirmed", response->token);
+    log_debug("(testapp) <- Message with token value %d delivery confirmed", response->token);
 }
 
 static void on_connect(void* context, MQTTAsync_successData* response)
@@ -47,24 +48,14 @@ static void on_connect(void* context, MQTTAsync_successData* response)
 
     log_info("Successful connection");
 
-    pubmsg.payload    = cJSON_PrintUnformatted(mqtt_info->command[1]);
-    pubmsg.payloadlen = strlen(cJSON_PrintUnformatted(mqtt_info->command[1]));
+    pubmsg.payload    = cJSON_PrintUnformatted(mqtt_info->command[count]);
+    pubmsg.payloadlen = strlen(cJSON_PrintUnformatted(mqtt_info->command[count]));
     pubmsg.qos        = 0;
     pubmsg.retained   = 0;
 
     opts.onSuccess = on_send;
     opts.onFailure = on_send_failure;
     opts.context   = client;
-
-    if ((rc = MQTTAsync_sendMessage(client, mqtt_info->query, &pubmsg, &opts)) !=
-        MQTTASYNC_SUCCESS) {
-        log_error("Failed to send message");
-    }
-    else {
-        log_debug("send message");
-    }
-
-    log_info("Successful reconnection");
 
     if ((rc = MQTTAsync_subscribe(client, mqtt_info->query_res, 0, &opts)) != MQTTASYNC_SUCCESS) {
         log_error("Failed to subscribe topic: %s", mqtt_info->query_res);
@@ -105,7 +96,15 @@ static void on_connect(void* context, MQTTAsync_successData* response)
         log_error("Failed to subscribe topic: %s", mqtt_info->report_res);
     }
     else {
-        log_debug("%lu Successful subscribe topic: %s", pthread_self(), mqtt_info->report_res);
+        log_debug("Successful subscribe topic: %s", mqtt_info->report_res);
+    }
+
+    if ((rc = MQTTAsync_sendMessage(client, mqtt_info->query, &pubmsg, &opts)) !=
+        MQTTASYNC_SUCCESS) {
+        log_error("Failed to send message %s(%d)", MQTTAsync_strerror(rc), rc);
+    }
+    else {
+        log_debug("(testapp) -> send message:%s", pubmsg.payload);
     }
 }
 
@@ -115,21 +114,53 @@ static void on_connect_failure(void* context, MQTTAsync_failureData* response)
     log_info("Failure connected, rc %d", response ? response->code : 0);
 }
 
-#endif
+static void mqtt_send()
+{
+    int                       rc     = 0;
+    MQTTAsync                 client = *mqtt_info->client;
+    MQTTAsync_responseOptions opts   = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message         pubmsg = MQTTAsync_message_initializer;
 
-#if 1
-static int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* message)
+    pubmsg.payload    = cJSON_PrintUnformatted(mqtt_info->command[count]);
+    pubmsg.payloadlen = strlen(cJSON_PrintUnformatted(mqtt_info->command[count]));
+    pubmsg.qos        = 0;
+    pubmsg.retained   = 0;
+
+    opts.onSuccess = on_send;
+    opts.onFailure = on_send_failure;
+    opts.context   = client;
+
+    if (mqtt_info->cmd_counts < count) count = 0;
+
+    sleep(10);
+
+    if ((rc = MQTTAsync_sendMessage(client, mqtt_info->query, &pubmsg, &opts)) !=
+        MQTTASYNC_SUCCESS) {
+        log_error("Failed to send message %s(%d)", MQTTAsync_strerror(rc), rc);
+    }
+    else {
+        log_debug("(testapp) -> send message:%s", pubmsg.payload);
+    }
+}
+
+int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* message)
 {
 
     char* payload = message->payload;
 
     memcpy(payload, (char*)message->payload, message->payloadlen);
 
+    if (payload != NULL && topic != NULL) count++;
+
     log_debug("(testapp) <- Message receive payload: %s, topic: %s", payload, topic);
 
-    // sprintf(topic, "%s/res", topic);
+    if (payload_check(payload, topic) == 1) {
+        log_info("(testapp) ...... √ %d/%d", count - 1, mqtt_info->cmd_counts);
+    } else {
+        log_error("(testapp) ...... × %d/%d", count - 1, mqtt_info->cmd_counts);
+    }
 
-    log_debug("(testapp) -> publish: %s\n", topic);
+    mqtt_send();
 
     return 1;
 }
@@ -151,35 +182,6 @@ static void conn_lost(void* context, char* cause)
         log_error("Failed to start connect, return code %d", rc);
     }
 }
-
-static void on_reconnect(void* context, char* cause)
-{
-    int                       rc     = 0;
-    MQTTAsync                 client = (MQTTAsync)context;
-    MQTTAsync_responseOptions opts   = MQTTAsync_responseOptions_initializer;
-    MQTTAsync_message         pubmsg = MQTTAsync_message_initializer;
-
-    pubmsg.payload    = cJSON_PrintUnformatted(mqtt_info->command[1]);
-    pubmsg.payloadlen = strlen(cJSON_PrintUnformatted(mqtt_info->command[1]));
-    pubmsg.qos        = 0;
-    pubmsg.retained   = 0;
-
-    opts.onSuccess = on_send;
-    opts.onFailure = on_send_failure;
-    opts.context   = client;
-
-    if ((rc = MQTTAsync_sendMessage(client, mqtt_info->query, &pubmsg, &opts)) !=
-        MQTTASYNC_SUCCESS) {
-        log_error("Failed to send message %s(%d)", MQTTAsync_strerror(rc), rc);
-    }
-    else {
-        log_debug("%lu send message", pthread_self());
-    }
-}
-
-#endif
-
-#if 1
 
 void mqtt_run(mqtt_info_t* info)
 {
@@ -219,16 +221,14 @@ void mqtt_run(mqtt_info_t* info)
     conn_opts.onFailure = on_connect_failure;
     conn_opts.context   = client;
 
-    if ((rc = MQTTAsync_setConnected(client, client, on_reconnect)) != MQTTASYNC_SUCCESS) {
-        log_error("%d Failed to setconnect %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
-    }
-
     if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
         log_error("%d Failed to connect %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
     }
     else {
-        log_info("%lu connect to MQTT Broker!", pthread_self());
+        log_info("connect to MQTT Broker!");
     }
+
+    mqtt_info->client = &client;
 }
 
 #endif
