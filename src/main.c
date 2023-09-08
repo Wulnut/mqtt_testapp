@@ -11,7 +11,7 @@ mqtt_info_t mqtt_info;
 
 int main(int argc, char** argv)
 {
-    log_set_level(LOG_DEBUG);
+    log_set_level(LOG_INFO);
 
     process_signal_init();
 
