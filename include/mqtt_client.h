@@ -18,6 +18,8 @@ typedef struct cts_mqtt_client {
 	char report[128];
 	char report_res[128];
 	char report_rt[128];
+	char test[128];
+	char test_res[128];
 	char passowrd[2048];
 	char username[128];
     char address[128];

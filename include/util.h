@@ -16,7 +16,7 @@ char conf_path[128]; // mqtt conf file
 
 void progress_bar(int flag);
 
-void config_init(mqtt_info_t *mit);
+void config_init(mqtt_info_t *info);
 void process_signal_init(void);
 void opt_init(int argc, char **argv);
 int read_test_conf(mqtt_info_t *info, char *path);
