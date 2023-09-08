@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "cJSON.h"
 #include "mqtt_client.h"
 
 #define MAXSIZE 30
@@ -17,7 +18,9 @@ char conf_path[128]; // mqtt conf file
 typedef struct test {
     int success;
     int error;
-    int total;
+    int intput_total;
+    int output_total;
+    cJSON *result[128];
 }test_t;
 
 void progress_bar(int flag);
@@ -26,7 +29,8 @@ void config_init(mqtt_info_t *info);
 void process_signal_init(void);
 void opt_init(int argc, char **argv);
 int read_test_conf(mqtt_info_t *info, char *path);
+int read_result_conf(char *path);
 int execute_cmd(const char *command, char **result);
-int payload_check(char *payload, char *topic);
+int payload_check(char *payload, char *topic, int idx);
 
 #endif
