@@ -14,6 +14,7 @@
 #define TIANYI_PATH "../conf/tianyi.conf"
 char test_conf[128]; // test conf file
 char conf_path[128]; // mqtt conf file
+char filename[128];
 
 typedef struct test {
     int success;
@@ -32,5 +33,8 @@ int read_test_conf(mqtt_info_t *info, char *path);
 int read_result_conf(char *path);
 int execute_cmd(const char *command, char **result);
 int payload_check(char *payload, char *topic, int idx);
+int get_json_int(cJSON *json, char *key, int default_value);
+char *get_json_str(cJSON *json, char *key);
+void log_write(char *line);
 
 #endif
