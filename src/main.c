@@ -19,13 +19,14 @@ int main(int argc, char** argv)
 
     mosquitto_lib_init();
 
-    // opt_init(argc, argv);
+    opt_init(argc, argv);
 
     config_init(&mqtt_info);
 
-    read_test_conf(&mqtt_info, "../conf/tianyi.conf"); 
+    // read_test_conf(&mqtt_info, "../conf/tianyi.conf"); 
+    read_test_conf(&mqtt_info, test_conf);
 
-    read_result_conf("../conf/result.conf");
+    // read_result_conf("../conf/result.conf");
 
     mqtt_run(&mqtt_info);
 

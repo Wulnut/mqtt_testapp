@@ -43,12 +43,30 @@ void config_init(mqtt_info_t* info)
 {
     log_info("testapp init start");
 
+    time_t     t;     // 声明一个time_t类型的变量t
+    struct tm* tmp;   // 声明一个指向struct tm的指针tmp
+
+    t   = time(NULL);      // 获取当前的系统时间
+    tmp = localtime(&t);   // 将time_t类型转换为struct tm类型，以本地时区表示
+
     FILE* fp = NULL;
     char  line[MAX_LINE_LEN];
 
     memset(line, '\0', MAX_LINE_LEN);
 
+    if (tmp == NULL) {
+        log_error("localtime");
+    }
+
+    if (strftime(filename, sizeof(filename), "../conf/result_%Y%m%d_%H%M%S.log", tmp) == 0) {
+        log_error("strftime returned 0");
+    }
+
+#if 0
     fp = fopen(CONFIG_PATH, "r");
+#endif
+    fp = fopen(conf_path, "r");
+    log_info("read conf file: %s", conf_path);
 
     if (fp == NULL) {
         log_error("test.conf open failed!\n");
@@ -79,10 +97,14 @@ void config_init(mqtt_info_t* info)
         if (strcmp(key, "host") == 0) {
 
             sscanf(value, "%63[^:]:%7s", tmp, info->port);
-
+#if 1
             if (sprintf(info->address, "mqtts://%s", tmp) < 0) {
                 log_error("address error");
             }
+#endif
+            // if (sprintf(info->address, "%s", tmp) < 0) {
+            //     log_error("address error");
+            // }
 
             if (sprintf(info->host, "%s:%s", info->address, info->port) < 0) {
                 log_error("host error");
@@ -404,7 +426,7 @@ static int is_valid_json(const char* str)
 {
     cJSON* json = cJSON_Parse(str);
 
-    if (json) {
+    if (json == NULL) {
 
         cJSON_Delete(json);
 
@@ -414,6 +436,7 @@ static int is_valid_json(const char* str)
     return 0;
 }
 
+#if 0
 static int json_equal(cJSON* json_1, cJSON* json_2)
 {
     if (!json_1 || !json_2) return 0;
@@ -421,41 +444,41 @@ static int json_equal(cJSON* json_1, cJSON* json_2)
     if (json_1->type != json_2->type) return 0;
 
     switch (json_1->type) {
-        case cJSON_Object:
-        {
-            cJSON* child1 = json_1->child;
-            cJSON* child2 = json_2->child;
-            while (child1 && child2) {
-                if (!json_equal(child1, child2)) return 0;
-                child1 = child1->next;
-                child2 = child2->next;
-            }
-            // 确保两个对象都遍历完
-            if (child1 || child2) return 0;
-            break;
+    case cJSON_Object:
+    {
+        cJSON* child1 = json_1->child;
+        cJSON* child2 = json_2->child;
+        while (child1 && child2) {
+            if (!json_equal(child1, child2)) return 0;
+            child1 = child1->next;
+            child2 = child2->next;
         }
-        case cJSON_Array:
-        {
-            cJSON* child1 = json_1->child;
-            cJSON* child2 = json_2->child;
-            while (child1 && child2) {
-                if (!json_equal(child1, child2)) return 0;
-                child1 = child1->next;
-                child2 = child2->next;
-            }
-            if (child1 || child2) return 0;
-            break;
+        // 确保两个对象都遍历完
+        if (child1 || child2) return 0;
+        break;
+    }
+    case cJSON_Array:
+    {
+        cJSON* child1 = json_1->child;
+        cJSON* child2 = json_2->child;
+        while (child1 && child2) {
+            if (!json_equal(child1, child2)) return 0;
+            child1 = child1->next;
+            child2 = child2->next;
         }
-        case cJSON_String:
-            if (strcmp(json_1->valuestring, json_2->valuestring) != 0) return 0;
-            break;
-        case cJSON_Number:
-            if (json_1->valuedouble != json_2->valuedouble) return 0;
-            break;
-        case cJSON_True:
-        case cJSON_False:
-        case cJSON_NULL: break;   // 已经通过type检查
-        default: return 0;        // 未知类型
+        if (child1 || child2) return 0;
+        break;
+    }
+    case cJSON_String:
+        if (strcmp(json_1->valuestring, json_2->valuestring) != 0) return 0;
+        break;
+    case cJSON_Number:
+        if (json_1->valuedouble != json_2->valuedouble) return 0;
+        break;
+    case cJSON_True:
+    case cJSON_False:
+    case cJSON_NULL: break;   // 已经通过type检查
+    default: return 0;        // 未知类型
     }
 
     return 1;
@@ -475,4 +498,61 @@ int payload_check(char* payload, char* topic, int idx)
     if (json_equal(json, testapps.result[count])) return -2;
 
     return 1;
+}
+#endif
+
+int get_json_int(cJSON *json, char *key, int default_value)
+{
+	cJSON *value = cJSON_GetObjectItem(json, key);
+
+	if (cJSON_IsNumber(value)) {
+		return value->valueint;
+	}
+
+	return default_value;
+}
+
+char *get_json_str(cJSON *json, char *key)
+{
+	cJSON *value = cJSON_GetObjectItem(json, key);
+
+	if (cJSON_IsString(value)) {
+		return value->valuestring;
+	}
+
+	return NULL;
+}
+
+int payload_check(char *payload, char *topic, int idx)
+{
+    int count = idx;
+    int result = 0;
+    cJSON* json = NULL;
+
+    if (payload == NULL && topic == NULL && testapps.result[count] == NULL) return 0;
+
+    if (is_valid_json(payload)) return -1;
+
+    json = cJSON_Parse(payload);
+
+    result = get_json_int(json, "result", -2);
+
+    if (result != 0) return result;
+
+    return 1;
+}
+
+void log_write(char* line)
+{
+    FILE* file      = NULL;
+
+    file = fopen(filename, "a+");
+
+    if (file == NULL) {
+        log_error("result.log file open error");
+    }
+
+    fprintf(file, "%s\n", line);
+
+    fclose(file);
 }

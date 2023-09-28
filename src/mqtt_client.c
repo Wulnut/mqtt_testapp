@@ -1,7 +1,9 @@
 #include "mqtt_client.h"
+
 #include "cJSON.h"
 #include "log.h"
 #include "util.h"
+
 #include <MQTTAsync.h>
 #include <MQTTClient.h>
 #include <MQTTClientPersistence.h>
@@ -105,6 +107,7 @@ static void on_connect(void* context, MQTTAsync_successData* response)
     }
     else {
         log_debug("(testapp) -> send message:%s", pubmsg.payload);
+        log_write(pubmsg.payload);
     }
 }
 
@@ -114,6 +117,7 @@ static void on_connect_failure(void* context, MQTTAsync_failureData* response)
     log_info("Failure connected, rc %d", response ? response->code : 0);
 }
 
+#    if 1
 static void mqtt_send()
 {
     int                       rc     = 0;
@@ -139,12 +143,15 @@ static void mqtt_send()
     }
     else {
         log_debug("(testapp) -> send message:%s", pubmsg.payload);
+        log_write(pubmsg.payload);
     }
 }
+#    endif
 
 int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* message)
 {
 
+    int ret = 0;
     char* payload = message->payload;
 
     memcpy(payload, (char*)message->payload, message->payloadlen);
@@ -152,11 +159,13 @@ int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* mes
     if (payload != NULL && topic != NULL) count++;
 
     log_debug("(testapp) <- Message receive payload: %s, topic: %s", payload, topic);
+    log_write(payload);
 
-    if (payload_check(payload, topic, count - 1) == 1) {
-        log_info("(testapp) ...... ✅ %d/%d", count, mqtt_info->cmd_counts);
-    } else {
-        log_error("(testapp) ...... ❎ %d/%d", count, mqtt_info->cmd_counts);
+    if ((ret = payload_check(payload, topic, count - 1)) == 1) {
+        log_info("(testapp) ...... ✔️ %d/%d", count, mqtt_info->cmd_counts);
+    }
+    else {
+        log_error("(testapp) ...... ❌ %d/%d(%d)", count, mqtt_info->cmd_counts, ret);
     }
 
     mqtt_send();
@@ -219,6 +228,8 @@ void mqtt_run(mqtt_info_t* info)
     conn_opts.onSuccess = on_connect;
     conn_opts.onFailure = on_connect_failure;
     conn_opts.context   = client;
+    conn_opts.username  = info->username;
+    conn_opts.password  = info->passowrd;
 
     if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
         log_error("%d Failed to connect %s(%d)", __LINE__, MQTTAsync_strerror(rc), rc);
@@ -239,8 +250,8 @@ mqtt_info_t* info_t;
 void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
 {
     int   rc         = 0;
-    int   payloadlen = strlen(cJSON_PrintUnformatted(info_t->command[1]));
-    char* payload    = cJSON_PrintUnformatted(info_t->command[1]);
+    int   payloadlen = strlen(cJSON_PrintUnformatted(info_t->command[39]));
+    char* payload    = cJSON_PrintUnformatted(info_t->command[39]);
 
     log_info("on_connect: %s payload: %s(%d)",
              mosquitto_connack_string(reason_code),
@@ -280,7 +291,15 @@ void on_connect(struct mosquitto* mosq, void* obj, int reason_code)
         mosquitto_disconnect(mosq);
     }
 
-    rc = mosquitto_publish(mosq, NULL, info_t->query, payloadlen, payload, 0, 0);
+    // while (1) {
+    //     rc = mosquitto_publish(mosq, NULL, info_t->test, payloadlen, payload, 0, 0);
+    //     if (rc != MOSQ_ERR_SUCCESS) {
+    //         log_error("Error publishing: %s\n", mosquitto_strerror(rc));
+    //         mosquitto_disconnect(mosq);
+    //     }
+    // }
+
+    rc = mosquitto_publish(mosq, NULL, info_t->test, payloadlen, payload, 0, 0);
     if (rc != MOSQ_ERR_SUCCESS) {
         log_error("Error publishing: %s\n", mosquitto_strerror(rc));
         mosquitto_disconnect(mosq);
@@ -312,22 +331,28 @@ void mqtt_run(mqtt_info_t* info)
         log_error("create client failed ....");
     }
 
+    // if ((rc = mosquitto_username_pw_set(mosq, info->username, info->passowrd)) !=
+    //     MOSQ_ERR_SUCCESS) {
+    //     log_error("Failed to set user pwd");
+    // }
+
     if ((rc = mosquitto_tls_set(mosq, SSL_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
 
-        log_error("Failed to mosquitto_tls_set: %s (%d)", mosquitto_strerror(rc), rc);
-    }
+		log_error("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
 
-    if ((rc = mosquitto_tls_opts_set(mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
+	}
 
-        log_error("Failed to mosquitto_tls_opts_set: %s (%d)", mosquitto_strerror(rc), rc);
-    }
+	if ((rc = mosquitto_tls_opts_set(mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
+
+		log_error("Failed to mosquitto_tls_opts_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+
+	}
 
     mosquitto_connect_callback_set(mosq, on_connect);
     mosquitto_log_callback_set(mosq, on_log);
     mosquitto_message_callback_set(mosq, on_message);
 
-    if ((rc = mosquitto_connect(mosq, info->address, atoi(info->port), 30)) !=
-        MOSQ_ERR_SUCCESS) {
+    if ((rc = mosquitto_connect(mosq, info->address, atoi(info->port), 30)) != MOSQ_ERR_SUCCESS) {
 
         log_error("Failed to connect: %s (%d)\n", mosquitto_strerror(rc), rc);
     }
@@ -339,6 +364,17 @@ void mqtt_run(mqtt_info_t* info)
         mosquitto_disconnect(mosq);
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
+    }
+
+    int   payloadlen = strlen(cJSON_PrintUnformatted(info_t->command[40]));
+    char* payload    = cJSON_PrintUnformatted(info_t->command[40]);
+
+    while (1) {
+        rc = mosquitto_publish(mosq, NULL, info_t->test, payloadlen, payload, 1, 0);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            log_error("Error publishing: %s\n", mosquitto_strerror(rc));
+            mosquitto_disconnect(mosq);
+        }
     }
 }
 
