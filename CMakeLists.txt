@@ -1,12 +1,13 @@
 cmake_minimum_required (VERSION 3.5)
 
+SET(CMAKE_C_COMPILER /usr/bin/clang)
+SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
 project (mqtt_testapp)
 
 # 默认开启 compile_commands.json
 # compile_commands.json https://edward852.github.io/post/%E7%94%9F%E6%88%90compile_commands.json%E6%96%87%E4%BB%B6/
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set (CMAKE_C_COMPILE_FEATURES /usr/bin/clang)
 set (CMAKE_C_STANDARD 99)
 set (CMAKE_C_STANDARD_REQUIRED ON)
 
