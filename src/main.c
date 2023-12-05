@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
     uloop_init();
 
-    mosquitto_lib_init();
+    // mosquitto_lib_init();
 
     opt_init(argc, argv);
 
