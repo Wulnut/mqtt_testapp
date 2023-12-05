@@ -4,6 +4,11 @@ SET(CMAKE_C_COMPILER /usr/bin/clang)
 SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
 project (mqtt_testapp)
 
+IF(DEV_BUILD)
+SET(ENABLE_MEMWATCH 1)
+ADD_DEFINITIONS(-DDEV_BUILD)
+ENDIF(DEV_BUILD)
+
 # 默认开启 compile_commands.json
 # compile_commands.json https://edward852.github.io/post/%E7%94%9F%E6%88%90compile_commands.json%E6%96%87%E4%BB%B6/
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -22,7 +27,8 @@ include_directories (include)
 add_compile_options(-std=gnu99
                     -Wall
                     -Wno-deprecated-declarations
-                    -DLOG_USE_COLOR)
+                    -DLOG_USE_COLOR
+                    -g)
 
 # set shared and static library
 add_library (testapp_shared SHARED ${SRC_LIST})
