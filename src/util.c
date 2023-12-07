@@ -65,8 +65,8 @@ void config_init(mqtt_info_t* info)
 #if 0
     fp = fopen(CONFIG_PATH, "r");
 #endif
-    fp = fopen(conf_path, "r");
-    log_info("read conf file: %s", conf_path);
+    fp = fopen(CONFIG_PATH, "r");
+    log_info("read conf file: %s", CONFIG_PATH);
 
     if (fp == NULL) {
         log_error("test.conf open failed!\n");
@@ -501,33 +501,33 @@ int payload_check(char* payload, char* topic, int idx)
 }
 #endif
 
-int get_json_int(cJSON *json, char *key, int default_value)
+int get_json_int(cJSON* json, char* key, int default_value)
 {
-	cJSON *value = cJSON_GetObjectItem(json, key);
+    cJSON* value = cJSON_GetObjectItem(json, key);
 
-	if (cJSON_IsNumber(value)) {
-		return value->valueint;
-	}
+    if (cJSON_IsNumber(value)) {
+        return value->valueint;
+    }
 
-	return default_value;
+    return default_value;
 }
 
-char *get_json_str(cJSON *json, char *key)
+char* get_json_str(cJSON* json, char* key)
 {
-	cJSON *value = cJSON_GetObjectItem(json, key);
+    cJSON* value = cJSON_GetObjectItem(json, key);
 
-	if (cJSON_IsString(value)) {
-		return value->valuestring;
-	}
+    if (cJSON_IsString(value)) {
+        return value->valuestring;
+    }
 
-	return NULL;
+    return NULL;
 }
 
-int payload_check(char *payload, char *topic, int idx)
+int payload_check(char* payload, char* topic, int idx)
 {
-    int count = idx;
-    int result = 0;
-    cJSON* json = NULL;
+    int    count  = idx;
+    int    result = 0;
+    cJSON* json   = NULL;
 
     if (payload == NULL && topic == NULL && testapps.result[count] == NULL) return 0;
 
@@ -544,7 +544,7 @@ int payload_check(char *payload, char *topic, int idx)
 
 void log_write(char* line)
 {
-    FILE* file      = NULL;
+    FILE* file = NULL;
 
     file = fopen(filename, "a+");
 

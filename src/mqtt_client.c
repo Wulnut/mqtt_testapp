@@ -151,7 +151,7 @@ static void mqtt_send()
 int on_message(void* context, char* topic, int topic_len, MQTTAsync_message* message)
 {
 
-    int ret = 0;
+    int   ret     = 0;
     char* payload = message->payload;
 
     memcpy(payload, (char*)message->payload, message->payloadlen);
