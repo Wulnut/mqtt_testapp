@@ -46,7 +46,7 @@ def publish(client):
 
     object_json = json.dumps(msg, indent=4)
 
-    for i in range(100):
+    for i in range(10):
         time.sleep(1)
         result = client.publish(topic, object_json.encode("utf-8"))
         # result: [0, 1]
@@ -62,7 +62,7 @@ def run():
     client = connect_mqtt()
     client.loop_start()
 
-    num_threads = 20
+    num_threads = 5
     threads = []
 
     for i in range(num_threads):
