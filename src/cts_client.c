@@ -35,22 +35,9 @@ static void on_log(struct mosquitto *mosq, void *userdata, int level, const char
     printf("mosquitto log: %s\n", str);
 }
 
-static void mosquitto_fd_handler(struct uloop_fd *u, unsigned int events)
-{
-    int fd = mosquitto_socket(cc.mosq);
-    if (fd == -1)
-        return;
-
-    // 调用 mosquitto_loop 来处理事件
-    mosquitto_loop_read(cc.mosq, 1024);
-    mosquitto_loop_write(cc.mosq, 1024);
-    mosquitto_loop_misc(cc.mosq);
-}
-
 static void cc_connect()
 {
     int rc = 0;
-    int fd = 0;
 
     uloop_timeout_cancel(&cc.connect_timer);
 
@@ -75,14 +62,15 @@ static void cc_connect()
     }
 
     if ((rc = mosquitto_connect(cc.mosq, cc.addr, atoi(cc.port), 30)) != MOSQ_ERR_SUCCESS) {
-        printf("Unable to connect\n");
+        printf("Unable to connect %s(%d), %s:%s\n", mosquitto_strerror(rc), rc, cc.addr, cc.port);
         cc_retry_conn();
     }
 
-    if ((fd = mosquitto_socket(cc.mosq)) >= 0) {
-        cc.mosquitto_ufd.fd = fd;
-        cc.mosquitto_ufd.cb = mosquitto_fd_handler;
-        uloop_fd_add(&cc.mosquitto_ufd, ULOOP_READ | ULOOP_WRITE);
+    if ((rc = mosquitto_loop_start(cc.mosq)) != MOSQ_ERR_SUCCESS) {
+
+        printf("Failed to mosquitto loop start: %s (%d)\n", mosquitto_strerror(rc), rc);
+
+        cc_retry_conn();
     }
 }
 
@@ -115,25 +103,22 @@ static void connect_cb(struct uloop_timeout *timeout) { cc_connect(); }
 
 static int config_init()
 {
-    FILE *fp         = NULL;
-    char  line[1024] = "";
+    FILE *fp                  = NULL;
+    char  line[MAX_LINE_LEN]  = "";
+    char  key[MAX_LINE_LEN]   = "";
+    char  value[MAX_LINE_LEN] = "";
 
     fp = fopen(CONFIG_PATH, "r");
 
     if (fp == NULL) {
         printf("ini.conf open failed\n");
-        goto err;
+        return 0;
     }
 
     while (fgets(line, 1024, fp) != NULL) {
-        char  key[MAX_LINE_LEN]   = "";
-        char  value[MAX_LINE_LEN] = "";
-        char *ptr                 = NULL;
 
-        // replace the '\r' in the read line
-        ptr = strchr(line, '\r');
-        if (ptr)
-            *ptr = '\0';
+        memset(key, '\0', MAX_LINE_LEN);
+        memset(value, '\0', MAX_LINE_LEN);
 
         if (line[0] == '#' || (line[0] == '/' && line[1] == '/') || line[0] == '\0') {
             continue;
@@ -159,10 +144,6 @@ static int config_init()
 
     fclose(fp);
     return 1;
-
-err:
-    fclose(fp);
-    return 0;
 }
 
 void cc_init()
