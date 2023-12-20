@@ -27,7 +27,6 @@ include_directories (include)
 add_compile_options(-std=gnu99
                     -Wall
                     -Wno-deprecated-declarations
-                    -DLOG_USE_COLOR
                     -g)
 
 # set shared and static library
@@ -44,4 +43,4 @@ find_library(UBOX_LIBRARY NAMES ubox PATHS /usr/local/lib)
 
 include_directories(/usr/local/include)
 
-TARGET_LINK_LIBRARIES(testapp ssl crypto paho-mqtt3as paho-mqtt3cs pthread ${UBOX_LIBRARY} mosquitto)
+TARGET_LINK_LIBRARIES(testapp ssl crypto pthread ${UBOX_LIBRARY} mosquitto)
