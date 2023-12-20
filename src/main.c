@@ -1,11 +1,6 @@
 #include "cts_client.h"
-#include <libubox/uloop.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 
     uloop_init();
