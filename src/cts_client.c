@@ -35,9 +35,22 @@ static void on_log(struct mosquitto *mosq, void *userdata, int level, const char
     printf("mosquitto log: %s\n", str);
 }
 
+#if 0
+static void mosquitto_fd_handler(struct uloop_fd *u, unsigned int events)
+{
+    // 调用 mosquitto_loop 来处理事件
+    mosquitto_loop_read(cc.mosq, 1024);
+    mosquitto_loop_write(cc.mosq, 1024);
+    mosquitto_loop_misc(cc.mosq);
+}
+#endif
+
 static void cc_connect()
 {
     int rc = 0;
+#if 0
+    int fd = 0;
+#endif
 
     uloop_timeout_cancel(&cc.connect_timer);
 
@@ -61,10 +74,18 @@ static void cc_connect()
         cc_retry_conn();
     }
 
-    if ((rc = mosquitto_connect(cc.mosq, cc.addr, atoi(cc.port), 30)) != MOSQ_ERR_SUCCESS) {
+    if ((rc = mosquitto_connect_async(cc.mosq, cc.addr, atoi(cc.port), 30)) != MOSQ_ERR_SUCCESS) {
         printf("Unable to connect %s(%d), %s:%s\n", mosquitto_strerror(rc), rc, cc.addr, cc.port);
         cc_retry_conn();
     }
+
+#if 0
+    if ((fd = mosquitto_socket(cc.mosq)) >= 0) {
+        cc.mosquitto_ufd.fd = fd;
+        cc.mosquitto_ufd.cb = mosquitto_fd_handler;
+        uloop_fd_add(&cc.mosquitto_ufd, ULOOP_READ | ULOOP_WRITE);
+    }
+#endif
 
     if ((rc = mosquitto_loop_start(cc.mosq)) != MOSQ_ERR_SUCCESS) {
 
