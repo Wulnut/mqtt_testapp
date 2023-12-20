@@ -6,6 +6,7 @@
 
 typedef struct cts_client
 {
+    int                  retry_num;
     struct mosquitto*    mosq;
     struct uloop_fd      mosquitto_ufd;
     struct uloop_timeout connect_timer;
