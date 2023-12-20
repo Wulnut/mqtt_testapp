@@ -7,9 +7,9 @@ int main(int argc, char **argv)
 
     cc_init();
 
-    uloop_run();
-
     cc_run();
+
+    uloop_run();
 
     uloop_done();
 
