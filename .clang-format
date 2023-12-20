@@ -31,7 +31,7 @@ AlignConsecutiveDeclarations: true
 AlignEscapedNewlines: Left
  
 # 水平对齐二元和三元表达式的操作数
-AlignOperands: Align
+AlignOperands: true
  
 # 对齐连续的尾随的注释
 AlignTrailingComments: true
