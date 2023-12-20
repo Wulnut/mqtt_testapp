@@ -8,6 +8,7 @@
 
 #define MAX_LINE_LEN 1024
 #define CONFIG_PATH  "../conf/ini.conf"
+#define CER_PATH     "../conf/zxykey.cer"
 #define DEFAULT_ADDR "101.227.231.138"
 #define DEFAULT_PORT "18080"
 

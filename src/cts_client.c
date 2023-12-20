@@ -64,7 +64,7 @@ static void cc_connect()
     mosquitto_message_callback_set(cc.mosq, on_message);
     mosquitto_log_callback_set(cc.mosq, on_log);
 
-    if ((rc = mosquitto_tls_set(cc.mosq, CONFIG_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
+    if ((rc = mosquitto_tls_set(cc.mosq, CER_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
         printf("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
         cc_retry_conn();
     }
