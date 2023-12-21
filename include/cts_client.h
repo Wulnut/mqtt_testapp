@@ -12,6 +12,8 @@
 #define DEFAULT_ADDR "101.227.231.138"
 #define DEFAULT_PORT "18080"
 
+#define TEST 0
+
 typedef struct cts_client {
     char                 addr[64];
     char                 port[8];
