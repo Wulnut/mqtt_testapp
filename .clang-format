@@ -25,7 +25,7 @@ BraceWrapping:
 AllowShortIfStatementsOnASingleLine: false # 不允许将if控制语句和语句放在同一行
 IndentCaseLabels: true # 对case标签进行额外的缩进。
 BreakBeforeBinaryOperators: NonAssignment # 在除了赋值运算符（如"="、"+="、"-="等）之外的二元运算符(如 &&)之前换行。
-SortIncludes: Never # 不要排序#include
+SortIncludes: CaseInsensitive # 不要排序#include
 SpaceAroundPointerQualifiers: Both # 保证指针限定符(const)左右都有空格
 PointerAlignment: Right # 指针符靠右
 # QualifierAlignment: Right # 限定符(const)靠右，根据官方文档介绍该操作有风险，不强制规定
