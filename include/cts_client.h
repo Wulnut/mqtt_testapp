@@ -23,6 +23,8 @@ typedef struct cts_client {
     struct uloop_timeout connect_timer;
 } cts_client_t;
 
+extern cts_client_t cc;
+
 void cc_init();
 void cc_run();
 void cc_done();
