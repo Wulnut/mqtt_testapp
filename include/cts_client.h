@@ -9,11 +9,11 @@
 
 #define PCAP_ERRBUF_SIZE 1024;
 #define MAX_DNS_REQUESTS 20
-#define MAX_LINE_LEN 1024
-#define CONFIG_PATH  "../conf/ini.conf"
-#define CER_PATH     "../conf/zxykey.cer"
-#define DEFAULT_ADDR "101.227.231.138"
-#define DEFAULT_PORT "18080"
+#define MAX_LINE_LEN     1024
+#define CONFIG_PATH      "../conf/ini.conf"
+#define CER_PATH         "../conf/zxykey.cer"
+#define DEFAULT_ADDR     "101.227.231.138"
+#define DEFAULT_PORT     "18080"
 
 #define TEST 0
 
@@ -34,6 +34,9 @@
         ULOG_ERR(fmt, ##__VA_ARGS__); \
     } while (0)
 
+#define MAC_ARG(p) p[0], p[1], p[2], p[3], p[4], p[5]
+#define IP_ARG(p)  p[0], p[1], p[2], p[3]
+
 typedef struct cts_client {
     char                 addr[64];
     char                 port[8];
@@ -45,7 +48,7 @@ typedef struct cts_client {
 } cts_client_t;
 
 typedef struct {
-    char dns_request[256];
+    char   dns_request[256];
     time_t timestamp;
 } DNS_request;
 

@@ -2,7 +2,10 @@
 #include <libubox/list.h>
 #include <libubox/uloop.h>
 #include <mosquitto.h>
-#include <pcap.h>
+#include <netinet/if_ether.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
 #include <pcap/pcap.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -163,7 +166,13 @@ void add_dns_request(const char *request)
 
 static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_char *packet)
 {
-    int *id = (int *)arg;
+    int                       *id                = (int *)arg;
+    const struct ether_header *ethernet_header   = NULL;
+    const struct ip           *ip_header         = NULL;
+    const struct udphdr       *udp_header        = NULL;
+    const u_char              *dns_header        = NULL;
+    unsigned int               ip_header_length  = 0;
+    unsigned int               udp_header_length = 0;
 
     printf("id: %d\n", ++(*id));
     printf("Packet length: %d\n", pkthdr->len);
@@ -178,6 +187,34 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
         }
     }
 
+    // Step 1: Parse Ethernet Header
+    ethernet_header = (struct ether_header *)packet;
+    if (ntohs(ethernet_header->ether_type) != ETHERTYPE_IP)
+        return;
+    printf("\nh_dest:%02x:%02x:%02x:%02x:%02x:%02x \n", MAC_ARG(ethernet_header->ether_dhost));
+    printf("h_source:%02x:%02x:%02x:%02x:%02x:%02x \n", MAC_ARG(ethernet_header->ether_shost));
+    printf("h_proto:%04x\n", ntohs(ethernet_header->ether_type));
+
+    // Step 2: Parse IP Header
+    ip_header           = (struct ip *)(packet + sizeof(struct ether_header));
+    ip_header_length    = ip_header->ip_hl * 4; // IP header length
+    unsigned char *src  = (unsigned char *)&(ip_header->ip_src);
+    unsigned char *dest = (unsigned char *)&(ip_header->ip_dst);
+    printf("\nsrc ip:%d.%d.%d.%d\n", IP_ARG(src));
+    printf("dest ip:%d.%d.%d.%d\n", IP_ARG(dest));
+
+    // Step 3: Parse UDP Header
+    udp_header        = (struct udphdr *)(packet + sizeof(struct ether_header) + ip_header_length);
+    udp_header_length = sizeof(struct udphdr);
+    printf("\nsource:%d dest:%d \n", ntohs(udp_header->source), ntohs(udp_header->dest));
+
+    // Step 4: Get to the DNS part
+    dns_header = packet + sizeof(struct ether_header) + ip_header_length + udp_header_length;
+    printf("\ndns_header:%s\n", dns_header);
+
+    // Parse DNS Header and data here...
+    // Extract the domain name, query type, etc.
+
     printf("\n\n");
 }
 
@@ -189,7 +226,7 @@ static void *dns_pcap()
     pcap_t            *device                    = NULL;
     char               err_buf[PCAP_ERRBUF_SIZE] = "";
     char              *dev_interface             = NULL;
-    char               filter_exp[]              = "udp port 53";
+    char               filter_exp[]              = "port domain";
     struct bpf_program filter;
     bpf_u_int32        net = 0;
 
