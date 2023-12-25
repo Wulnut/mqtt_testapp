@@ -2,11 +2,16 @@
 #include <libubox/list.h>
 #include <libubox/uloop.h>
 #include <mosquitto.h>
+#include <pcap.h>
+#include <pcap/pcap.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 cts_client_t     cc;
+DNS_request      dns_requests[MAX_DNS_REQUESTS];
+int              dns_request_count = 0;
 struct list_head session;
 
 static void cc_retry_conn();
@@ -124,6 +129,94 @@ static void cc_retry_conn()
     }
 }
 
+static void check_and_report()
+{
+    time_t now = time(NULL);
+
+    if (dns_request_count > MAX_DNS_REQUESTS) {
+        printf("Report: Reached 20 DNS requests.\n");
+        dns_request_count = 0;
+        return;
+    }
+
+    if (dns_request_count > 0 && now - dns_requests[0].timestamp >= 10) {
+        printf("Report: Earliest DNS request delayed over 10 seconds.\n");
+        dns_request_count = 0;
+        return;
+    }
+}
+
+void add_dns_request(const char *request)
+{
+    if (dns_request_count < MAX_DNS_REQUESTS) {
+
+        strncpy(dns_requests[dns_request_count].dns_request, request,
+                sizeof(dns_requests[dns_request_count].dns_request));
+
+        dns_requests[dns_request_count].timestamp = time(NULL);
+
+        dns_request_count++;
+    }
+
+    check_and_report();
+}
+
+static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_char *packet)
+{
+    int *id = (int *)arg;
+
+    printf("id: %d\n", ++(*id));
+    printf("Packet length: %d\n", pkthdr->len);
+    printf("Number of bytes: %d\n", pkthdr->caplen);
+    printf("Recieved time: %s", ctime((const time_t *)&pkthdr->ts.tv_sec));
+
+    int i;
+    for (i = 0; i < pkthdr->len; ++i) {
+        printf(" %02x", packet[i]);
+        if ((i + 1) % 16 == 0) {
+            printf("\n");
+        }
+    }
+
+    printf("\n\n");
+}
+
+static void *dns_pcap()
+{
+    pthread_detach(pthread_self());
+
+    int                id                        = 0;
+    pcap_t            *device                    = NULL;
+    char               err_buf[PCAP_ERRBUF_SIZE] = "";
+    char              *dev_interface             = NULL;
+    char               filter_exp[]              = "udp port 53";
+    struct bpf_program filter;
+    bpf_u_int32        net = 0;
+
+    dev_interface = pcap_lookupdev(err_buf);
+
+    if (dev_interface == NULL)
+        printf("Could not get device interface\n");
+
+    device = pcap_open_live(dev_interface, 65535, 1, 3000, err_buf);
+
+    if (device == NULL) {
+        printf("Could not open device %s: %s\n", dev_interface, err_buf);
+    }
+
+    if (pcap_compile(device, &filter, filter_exp, 0, net) == -1)
+        printf("Could not parse filter %s: %s\n", filter_exp, pcap_geterr(device));
+
+    if (pcap_setfilter(device, &filter) == -1)
+        printf("Could not install filter %s: %s\n", filter_exp, pcap_geterr(device));
+
+    pcap_loop(device, -1, get_packet, (u_char *)&id);
+
+    pcap_close(device);
+
+    pthread_exit(0);
+}
+
 static void connect_cb(struct uloop_timeout *timeout) { cc_connect(); }
 
 static int config_init()
@@ -173,6 +266,8 @@ static int config_init()
 
 void cc_init()
 {
+    pthread_t dns;
+
     if (config_init() == 0)
         printf("config init failed\n");
 
@@ -183,6 +278,9 @@ void cc_init()
 
     if (mosquitto_lib_init() < 0)
         printf("mosquitto lib init failed\n");
+
+    if (pthread_create(&dns, NULL, dns_pcap, (void *)0) != 0)
+        printf("dns packet thread init failed\n");
 
     cc.retry_num        = 1;
     cc.connect_timer.cb = connect_cb;

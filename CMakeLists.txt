@@ -43,4 +43,4 @@ find_library(UBOX_LIBRARY NAMES ubox PATHS /usr/local/lib)
 
 include_directories(/usr/local/include)
 
-TARGET_LINK_LIBRARIES(testapp ssl crypto pthread ${UBOX_LIBRARY} mosquitto)
+TARGET_LINK_LIBRARIES(testapp ssl crypto pthread ${UBOX_LIBRARY} mosquitto pcap)

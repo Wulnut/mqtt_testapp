@@ -4,10 +4,11 @@
 #include "cts.h"
 #define _GUN_SOURCE
 
-#include "cJSON.h"
 #include <libubox/uloop.h>
 #include <mosquitto.h>
 
+#define PCAP_ERRBUF_SIZE 1024;
+#define MAX_DNS_REQUESTS 20
 #define MAX_LINE_LEN 1024
 #define CONFIG_PATH  "../conf/ini.conf"
 #define CER_PATH     "../conf/zxykey.cer"
@@ -42,6 +43,11 @@ typedef struct cts_client {
     struct uloop_timeout connect_timer;
     cts_result_t         result;
 } cts_client_t;
+
+typedef struct {
+    char dns_request[256];
+    time_t timestamp;
+} DNS_request;
 
 extern cts_client_t cc;
 
