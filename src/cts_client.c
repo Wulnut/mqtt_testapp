@@ -1,4 +1,5 @@
 #include "cts_client.h"
+#include "common.h"
 #include <libubox/list.h>
 #include <libubox/uloop.h>
 #include <mosquitto.h>
@@ -8,6 +9,7 @@
 #include <netinet/udp.h>
 #include <pcap/pcap.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,11 +24,11 @@ static void cc_retry_conn();
 static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 {
     if (rc) {
-        printf("Error with result code: %d\n", rc);
+        ULOG_INFO("Error with result code: %d\n", rc);
         // 处理连接失败的情况
     }
     else {
-        printf("Connected to MQTT broker\n");
+        ULOG_INFO("Connected to MQTT broker\n");
         // 连接成功后的操作，例如订阅主题等
     }
 }
@@ -34,30 +36,40 @@ static void on_connect(struct mosquitto *mosq, void *obj, int rc)
 static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
     if (msg->payload) {
-        printf("Received message on topic %s: %s\n", msg->topic, (char *)msg->payload);
+        ULOG_INFO("Received message on topic %s: %s\n", msg->topic, (char *)msg->payload);
     }
 }
 
 static void on_log(struct mosquitto *mosq, void *userdata, int level, const char *str)
 {
-    printf("mosquitto log: %s\n", str);
+    ULOG_INFO("mosquitto log: %s\n", str);
 }
 
 #if TEST
 static void mosquitto_fd_handler(struct uloop_fd *u, unsigned int events)
 {
-    int fd = mosquitto_socket(cc.mosq);
-    if (fd == -1)
-        return;
-    // 调用 mosquitto_loop 来处理事件
-    mosquitto_loop_read(cc.mosq, 1024);
-    mosquitto_loop_write(cc.mosq, 1024);
+    // ULOG_MARK();
+
     mosquitto_loop_misc(cc.mosq);
+
+    if (events & ULOOP_READ) {
+        // ULOG_MARK();
+        mosquitto_loop_read(cc.mosq, 65535);
+    }
+
+    if (events & ULOOP_WRITE) {
+        // ULOG_MARK();
+        mosquitto_loop_write(cc.mosq, 65535);
+    }
 }
 #endif
 
-static void cc_connect()
+static void *cc_connect()
 {
+    ULOG_MARK();
+
+    pthread_detach(pthread_self());
+
     int rc = 0;
 #if TEST
     int fd = 0;
@@ -67,7 +79,7 @@ static void cc_connect()
 
     cc.mosq = mosquitto_new("mqtt_test_0x01", true, NULL);
     if (!cc.mosq) {
-        printf("Error: Out of memeory.\n");
+        ULOG_DEBUG("Error: Out of memeory.\n");
         cc_retry_conn();
     }
 
@@ -76,35 +88,43 @@ static void cc_connect()
     mosquitto_log_callback_set(cc.mosq, on_log);
 
     if ((rc = mosquitto_tls_set(cc.mosq, CER_PATH, NULL, NULL, NULL, NULL)) != MOSQ_ERR_SUCCESS) {
-        printf("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
+        ULOG_DEBUG("Failed to mosquitto_tls_set: %s (%d)\n", mosquitto_strerror(rc), rc);
         cc_retry_conn();
     }
 
     if ((rc = mosquitto_tls_opts_set(cc.mosq, 0, "tlsv1.2", NULL)) != MOSQ_ERR_SUCCESS) {
-        printf("Failed to mosquitto_tls_opts_set: %s(%d)\n", mosquitto_strerror(rc), rc);
+        ULOG_DEBUG("Failed to mosquitto_tls_opts_set: %s(%d)\n", mosquitto_strerror(rc), rc);
         cc_retry_conn();
     }
 
     if ((rc = mosquitto_connect(cc.mosq, cc.addr, atoi(cc.port), 30)) != MOSQ_ERR_SUCCESS) {
-        printf("Unable to connect %s(%d), %s:%s\n", mosquitto_strerror(rc), rc, cc.addr, cc.port);
+        ULOG_DEBUG("Unable to connect %s(%d), %s:%s\n", mosquitto_strerror(rc), rc, cc.addr, cc.port);
         cc_retry_conn();
     }
 
 #if TEST
     fd = mosquitto_socket(cc.mosq);
     if (fd >= 0) {
-        cc.mosquitto_ufd.fd = fd;
-        cc.mosquitto_ufd.cb = mosquitto_fd_handler;
+
+        cc.mosquitto_ufd.fd         = fd;
+        cc.mosquitto_ufd.cb         = mosquitto_fd_handler;
+        cc.mosquitto_ufd.registered = false;
+        cc.mosquitto_ufd.flags      = ULOOP_READ | ULOOP_WRITE;
+
         uloop_fd_add(&cc.mosquitto_ufd, ULOOP_READ | ULOOP_WRITE);
     }
+
+    uloop_timeout_set(&cc.misc_loop_timer, 250);
 #endif
 
     if ((rc = mosquitto_loop_start(cc.mosq)) != MOSQ_ERR_SUCCESS) {
 
-        printf("Failed to mosquitto loop start: %s (%d)\n", mosquitto_strerror(rc), rc);
+        ULOG_DEBUG("Failed to mosquitto loop start: %s (%d)\n", mosquitto_strerror(rc), rc);
 
         cc_retry_conn();
     }
+
+    pthread_exit(0);
 }
 
 static void cc_disconnect()
@@ -116,13 +136,13 @@ static void cc_disconnect()
 static void cc_reconnect(int interval)
 {
     cc_disconnect();
-    printf("(\"CTS\") reconnect after %ds\n", interval / 1000);
+    ULOG_DEBUG("(\"CTS\") reconnect after %ds\n", interval / 1000);
     uloop_timeout_set(&cc.connect_timer, interval);
 }
 
 static void cc_retry_conn()
 {
-    printf("(\"CTS\") %dth retry auth\n", ++cc.retry_num);
+    ULOG_DEBUG("(\"CTS\") %dth retry auth\n", ++cc.retry_num);
 
     if (cc.retry_num <= 3) {
         cc_reconnect(1000);
@@ -137,13 +157,13 @@ static void check_and_report()
     time_t now = time(NULL);
 
     if (dns_request_count > MAX_DNS_REQUESTS) {
-        printf("Report: Reached 20 DNS requests.\n");
+        ULOG_DEBUG("Report: Reached 20 DNS requests.\n");
         dns_request_count = 0;
         return;
     }
 
     if (dns_request_count > 0 && now - dns_requests[0].timestamp >= 10) {
-        printf("Report: Earliest DNS request delayed over 10 seconds.\n");
+        ULOG_DEBUG("Report: Earliest DNS request delayed over 10 seconds.\n");
         dns_request_count = 0;
         return;
     }
@@ -266,7 +286,7 @@ static int config_init()
     fp = fopen(CONFIG_PATH, "r");
 
     if (fp == NULL) {
-        printf("ini.conf open failed\n");
+        ULOG_DEBUG("ini.conf open failed\n");
         return 0;
     }
 
@@ -303,10 +323,8 @@ static int config_init()
 
 void cc_init()
 {
-    pthread_t dns;
-
     if (config_init() == 0)
-        printf("config init failed\n");
+        ULOG_DEBUG("config init failed\n");
 
     if (strlen(cc.addr) == 0 || strlen(cc.port) == 0) {
         strncpy(cc.addr, DEFAULT_ADDR, sizeof(DEFAULT_ADDR));
@@ -314,18 +332,27 @@ void cc_init()
     }
 
     if (mosquitto_lib_init() < 0)
-        printf("mosquitto lib init failed\n");
+        ULOG_DEBUG("mosquitto lib init failed\n");
 
-    if (pthread_create(&dns, NULL, dns_pcap, (void *)0) != 0)
-        printf("dns packet thread init failed\n");
-
-    cc.retry_num        = 1;
-    cc.connect_timer.cb = connect_cb;
+    cc.retry_num          = 1;
+    cc.connect_timer.cb   = connect_cb;
 
     INIT_LIST_HEAD(&session);
 }
 
-void cc_run() { cc_connect(); }
+void cc_run()
+{
+    pthread_t dns;
+    pthread_t mqtt;
+
+    // cc_connect();
+
+    if (pthread_create(&mqtt, NULL, cc_connect, (void *)0) != 0)
+        ULOG_DEBUG("mqtt loop thread init failed\n");
+
+    if (pthread_create(&dns, NULL, dns_pcap, (void *)0) != 0)
+        ULOG_DEBUG("dns packet thread init failed\n");
+}
 
 void cc_done()
 {
