@@ -190,7 +190,7 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
     const struct ether_header *ethernet_header   = NULL;
     const struct ip           *ip_header         = NULL;
     const struct udphdr       *udp_header        = NULL;
-    const u_char              *dns_header        = NULL;
+    const dns_header_t        *dns_header        = NULL;
     unsigned int               ip_header_length  = 0;
     unsigned int               udp_header_length = 0;
 
@@ -199,8 +199,7 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
     printf("Number of bytes: %d\n", pkthdr->caplen);
     printf("Recieved time: %s", ctime((const time_t *)&pkthdr->ts.tv_sec));
 
-    int i;
-    for (i = 0; i < pkthdr->len; ++i) {
+    for (int i = 0; i < pkthdr->len; ++i) {
         printf(" %02x", packet[i]);
         if ((i + 1) % 16 == 0) {
             printf("\n");
@@ -222,15 +221,18 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
     unsigned char *dest = (unsigned char *)&(ip_header->ip_dst);
     printf("\nsrc ip:%d.%d.%d.%d\n", IP_ARG(src));
     printf("dest ip:%d.%d.%d.%d\n", IP_ARG(dest));
+    printf("proto ip:%x", ip_header->ip_p);
 
     // Step 3: Parse UDP Header
     udp_header        = (struct udphdr *)(packet + sizeof(struct ether_header) + ip_header_length);
     udp_header_length = sizeof(struct udphdr);
-    printf("\nsource:%d dest:%d \n", ntohs(udp_header->source), ntohs(udp_header->dest));
+    printf("\nsource:%d dest:%d udp_header_len:%d\n", ntohs(udp_header->uh_sport),
+           ntohs(udp_header->uh_dport), udp_header_length);
 
     // Step 4: Get to the DNS part
-    dns_header = packet + sizeof(struct ether_header) + ip_header_length + udp_header_length;
-    printf("\ndns_header:%s\n", dns_header);
+    dns_header =
+        (dns_header_t *)(packet + sizeof(struct ether_header) + ip_header_length + udp_header_length);
+    printf("\ndns_header:%d\n", dns_header->tid);
 
     // Parse DNS Header and data here...
     // Extract the domain name, query type, etc.
@@ -334,8 +336,8 @@ void cc_init()
     if (mosquitto_lib_init() < 0)
         ULOG_DEBUG("mosquitto lib init failed\n");
 
-    cc.retry_num          = 1;
-    cc.connect_timer.cb   = connect_cb;
+    cc.retry_num        = 1;
+    cc.connect_timer.cb = connect_cb;
 
     INIT_LIST_HEAD(&session);
 }

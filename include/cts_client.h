@@ -47,6 +47,15 @@ typedef struct cts_client {
     cts_result_t         result;
 } cts_client_t;
 
+typedef struct dns_header {
+    uint16_t tid;
+    uint16_t flags;
+    uint16_t qdcount;
+    uint16_t ancount;
+    uint16_t nscount;
+    uint16_t arcount;
+} dns_header_t;
+
 typedef struct {
     char   dns_request[256];
     time_t timestamp;
