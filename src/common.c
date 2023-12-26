@@ -1,4 +1,5 @@
 #include "common.h"
+#include <pthread.h>
 #include <time.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -30,8 +31,8 @@ void ulog(const char *priority, const char *fmt, ...)
     }
 
     if (f) {
-        fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d.%03ld [%s] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec / 1000000, priority);
+        fprintf(f, "%04d-%02d-%02d %02d:%02d:%02d.%03ld [%s][%lu] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec / 1000000, priority, pthread_self());
 
         va_start(ap, fmt);
         vfprintf(f, fmt, ap);
@@ -40,8 +41,8 @@ void ulog(const char *priority, const char *fmt, ...)
         fclose(f);
     }
 
-    fprintf(stderr, "%04d-%02d-%02d %02d:%02d:%02d.%03ld [%s] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-            tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec / 1000000, priority);
+    fprintf(stderr, "%04d-%02d-%02d %02d:%02d:%02d.%03ld [%s][%lu] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+            tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec / 1000000, priority, pthread_self());
 
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
