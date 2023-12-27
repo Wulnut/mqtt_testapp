@@ -74,6 +74,15 @@ struct dnsq {
     uint16_t qtype;
 };
 
+struct dnsr {
+    u_char      *name;     // 域名
+    uint16_t     type;     // 类型（例如，A, MX, CNAME）
+    uint16_t     Class;    // 类
+    unsigned int ttl;      // 生存时间
+    uint16_t     data_len; // 数据长度
+    u_char      *rdata;    // 资源数据
+};
+
 typedef struct {
     char   dns_request[256];
     time_t timestamp;

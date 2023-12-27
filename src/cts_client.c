@@ -185,7 +185,7 @@ void add_dns_request(const char *request)
     check_and_report();
 }
 
-static void parse_dns_name(u_char *buffer, char *output)
+static void parse_dns_name(u_char *dns, u_char *buffer, char *output)
 {
     int i   = 0;
     int j   = 0;
@@ -204,6 +204,47 @@ static void parse_dns_name(u_char *buffer, char *output)
     }
 
     output[i + j - 1] = '\0';
+}
+
+void parse_dns_answer(unsigned char *buffer, int answer_offset, int answers)
+{
+    int i = 0;
+    ;
+
+    for (i = 0; i < answers; i++) {
+        struct dnsr rr;
+        rr.name = &buffer[answer_offset]; // 指向资源记录的名称
+
+        // 跳过域名
+        while (buffer[answer_offset] != 0) {
+            answer_offset++;
+        }
+        answer_offset++; // 跳过域名的 null 字节
+
+        // 资源记录头部
+        rr.type = ntohs(*(unsigned short *)(buffer + answer_offset));
+        answer_offset += 2;
+        rr.Class = ntohs(*(unsigned short *)(buffer + answer_offset));
+        answer_offset += 2;
+        rr.ttl = ntohl(*(unsigned int *)(buffer + answer_offset));
+        answer_offset += 4;
+        rr.data_len = ntohs(*(unsigned short *)(buffer + answer_offset));
+        answer_offset += 2;
+
+        // 资源数据
+        rr.rdata = (unsigned char *)malloc(rr.data_len + 1);
+        memcpy(rr.rdata, buffer + answer_offset, rr.data_len);
+        rr.rdata[rr.data_len] = '\0'; // 如果是字符串类型的数据，确保 null 结尾
+        answer_offset += rr.data_len;
+
+        // 打印资源记录的信息
+        char domain_name[256];
+        parse_dns_name(buffer, rr.name, domain_name);
+        printf("Resource Record: %s, Type: %d, Class: %d, TTL: %d, Data Length: %d\n", domain_name, rr.type,
+               rr.Class, rr.ttl, rr.data_len);
+
+        _free(rr.rdata);
+    }
 }
 
 static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_char *packet)
@@ -270,7 +311,7 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
         qname = (u_char *)(packet + sizeof(struct ether_header) + ip_header_length + udp_header_length
                            + dns_header_length);
 
-        parse_dns_name(qname, domain_name);
+        parse_dns_name(NULL, qname, domain_name);
         printf("\t\t\t\tDomain name: %s", domain_name);
 
         dns_question = (struct dnsq *)(packet + sizeof(struct ether_header) + ip_header_length
