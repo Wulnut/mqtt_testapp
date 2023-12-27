@@ -2,6 +2,7 @@
 #define CTS_CLIENT_H
 
 #include "cts.h"
+#include <stdint.h>
 #define _GUN_SOURCE
 
 #include <libubox/uloop.h>
@@ -47,14 +48,31 @@ typedef struct cts_client {
     cts_result_t         result;
 } cts_client_t;
 
-typedef struct dns_header {
-    uint16_t tid;
-    uint16_t flags;
-    uint16_t qdcount;
-    uint16_t ancount;
-    uint16_t nscount;
-    uint16_t arcount;
-} dns_header_t;
+struct dnshdr {
+    uint16_t id; // Identification number
+    // Flags
+    u_char rd    :1; // Recursion Desired
+    u_char tc    :1; // Truncated Message
+    u_char aa    :1; // Authoritative Answer
+    u_char opcode:4; // Purpose of message
+    u_char qr    :1; // Query/Response flag
+
+    u_char rcode:4; // Response code
+    u_char cd   :1; // Checking Disabled
+    u_char ad   :1; // Authenticated Data
+    u_char z    :1; // Reserved
+    u_char ra   :1; // Recursion Available
+
+    uint16_t q_count;    // Number of question entries
+    uint16_t ans_count;  // Number of answer entries
+    uint16_t auth_count; // Number of authority entries
+    uint16_t add_count;  // Number of resource entries
+};
+
+struct dnsq {
+    uint16_t qclass;
+    uint16_t qtype;
+};
 
 typedef struct {
     char   dns_request[256];

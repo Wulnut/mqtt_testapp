@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 cts_client_t     cc;
 DNS_request      dns_requests[MAX_DNS_REQUESTS];
@@ -184,21 +185,47 @@ void add_dns_request(const char *request)
     check_and_report();
 }
 
+static void parse_dns_name(u_char *buffer, char *output)
+{
+    int i   = 0;
+    int j   = 0;
+    int len = 0;
+
+    while (buffer[i] != 0) {
+        len = buffer[i];
+        ++i;
+
+        for (j = 0; j < len; ++j) {
+            output[i + j - 1] = buffer[i + j];
+        }
+
+        output[i + j - 1] = '.';
+        i += len;
+    }
+
+    output[i + j - 1] = '\0';
+}
+
 static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_char *packet)
 {
     int                       *id                = (int *)arg;
+    u_char                    *qname             = NULL;
+    char                       domain_name[256]  = "";
     const struct ether_header *ethernet_header   = NULL;
     const struct ip           *ip_header         = NULL;
     const struct udphdr       *udp_header        = NULL;
-    const dns_header_t        *dns_header        = NULL;
+    const struct dnshdr       *dns_header        = NULL;
+    const struct dnsq         *dns_question      = NULL;
     unsigned int               ip_header_length  = 0;
     unsigned int               udp_header_length = 0;
+    unsigned int               dns_header_length = 0;
 
     printf("id: %d\n", ++(*id));
     printf("Packet length: %d\n", pkthdr->len);
     printf("Number of bytes: %d\n", pkthdr->caplen);
     printf("Recieved time: %s", ctime((const time_t *)&pkthdr->ts.tv_sec));
 
+    // print frame
     for (int i = 0; i < pkthdr->len; ++i) {
         printf(" %02x", packet[i]);
         if ((i + 1) % 16 == 0) {
@@ -219,23 +246,37 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
     ip_header_length    = ip_header->ip_hl * 4; // IP header length
     unsigned char *src  = (unsigned char *)&(ip_header->ip_src);
     unsigned char *dest = (unsigned char *)&(ip_header->ip_dst);
-    printf("\nsrc ip:%d.%d.%d.%d\n", IP_ARG(src));
-    printf("dest ip:%d.%d.%d.%d\n", IP_ARG(dest));
-    printf("proto ip:%x", ip_header->ip_p);
+    printf("\tsrc ip:%d.%d.%d.%d\n", IP_ARG(src));
+    printf("\tdest ip:%d.%d.%d.%d\n", IP_ARG(dest));
+    printf("\tproto ip:%x\n", ip_header->ip_p);
 
     // Step 3: Parse UDP Header
     udp_header        = (struct udphdr *)(packet + sizeof(struct ether_header) + ip_header_length);
     udp_header_length = sizeof(struct udphdr);
-    printf("\nsource:%d dest:%d udp_header_len:%d\n", ntohs(udp_header->uh_sport),
+    printf("\t\tsource:%d dest:%d udp_header_len:%d\n", ntohs(udp_header->uh_sport),
            ntohs(udp_header->uh_dport), udp_header_length);
 
     // Step 4: Get to the DNS part
-    dns_header =
-        (dns_header_t *)(packet + sizeof(struct ether_header) + ip_header_length + udp_header_length);
-    printf("\ndns_header:%d\n", dns_header->tid);
-
     // Parse DNS Header and data here...
+    dns_header =
+        (struct dnshdr *)(packet + sizeof(struct ether_header) + ip_header_length + udp_header_length);
+    dns_header_length = sizeof(struct dnshdr);
+    printf("\t\t\tdns_qr:%hhu", dns_header->qr);
+    printf(" dns_q:%d", ntohs(dns_header->q_count));
+    printf(" dns_an:%d\n", ntohs(dns_header->ans_count));
+
     // Extract the domain name, query type, etc.
+    if (dns_header->qr == 0) {
+        qname = (u_char *)(packet + sizeof(struct ether_header) + ip_header_length + udp_header_length
+                           + dns_header_length);
+
+        parse_dns_name(qname, domain_name);
+        printf("\t\t\t\tDomain name: %s", domain_name);
+
+        dns_question = (struct dnsq *)(packet + sizeof(struct ether_header) + ip_header_length
+                                       + udp_header_length + dns_header_length + (strlen(domain_name) + 1));
+        printf(" Query Type: %d, Query Class: %d\n", ntohs(dns_question->qtype), ntohs(dns_question->qclass));
+    }
 
     printf("\n\n");
 }
