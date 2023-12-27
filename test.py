@@ -11,7 +11,7 @@ from paho.mqtt import client as mqtt_client
 
 broker = '101.227.231.138'
 port = 18080
-topic = "devices/1931818307682306/query"
+topic = "devices/149940500896285/query"
 # generate client ID with pub prefix randomly
 client_id = f'python-mqtt-{random.randint(0, 1000)}'
 
@@ -36,17 +36,17 @@ def publish(client):
     msg = {
             "code": 1008,
             "sequence": "12345",
-            "deviceId": "1931818307682306",
-            "mac": "14EB088CD2AB",
+            "deviceId": "149940500896285",
+            "mac": "0E0000000000",
             "time": 1361542433,
             "query": [{
-                "name": "ssidMesList"
+                "name": "ponInfo"
             }]
         }
 
     object_json = json.dumps(msg, indent=4)
 
-    for i in range(10):
+    for i in range(100):
         time.sleep(1)
         result = client.publish(topic, object_json.encode("utf-8"))
         # result: [0, 1]
