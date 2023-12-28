@@ -37,3 +37,4 @@ AlignConsecutiveAssignments: Consecutive # 对齐赋值,不跨空行不跨注释
 BitFieldColonSpacing: None # 位域前没有空格
 AlignEscapedNewlines: Left # 分行符靠左对齐
 AlignConsecutiveDeclarations: Consecutive # 对齐定义，用处不大，不启用
+AlignArrayOfStructures: Left
