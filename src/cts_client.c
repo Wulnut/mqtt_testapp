@@ -210,9 +210,9 @@ static void cc_retry_conn()
 
 static void check_and_report()
 {
-    time_t now = time(NULL);
     ULOG_MARK();
-    ULOG_DEBUG("dns_count:%d\n", dns_request_count);
+
+    time_t now = time(NULL);
 
     if (dns_request_count > MAX_DNS_REQUESTS) {
         ULOG_DEBUG("Report: Reached 20 DNS requests.\n");
@@ -228,6 +228,7 @@ static void check_and_report()
     if (dns_request_count > 0 && now - dns_requests[0].timestamp >= 10) {
         ULOG_DEBUG("Report: Earliest DNS request delayed over 10 seconds.\n");
         ULOG_DEBUG("dns: %s\n", dns_requests[0].dns_request);
+
         dns_request_count = 0;
         return;
     }
@@ -235,8 +236,6 @@ static void check_and_report()
 
 void add_dns_request(const char *request)
 {
-    ULOG_MARK();
-    ULOG_DEBUG("dns_count:%d\n", dns_request_count);
 
     if (dns_request_count < MAX_DNS_REQUESTS) {
 
@@ -256,20 +255,26 @@ static void parse_dns_name(u_char *dns, u_char *buffer, char *output)
     int i   = 0;
     int j   = 0;
     int len = 0;
+    int pos = 0; // 输出字符串的当前位置
 
     while (buffer[i] != 0) {
         len = buffer[i];
         ++i;
 
+        // 复制域名的这一部分
         for (j = 0; j < len; ++j) {
-            output[i + j - 1] = buffer[i + j];
+            output[pos++] = buffer[i + j];
         }
 
-        output[i + j - 1] = '.';
+        // 检查是否到达域名的末尾
+        if (buffer[i + j] != 0) {
+            output[pos++] = '.'; // 如果不是末尾，添加点
+        }
+
         i += len;
     }
 
-    output[i + j - 1] = '\0';
+    output[pos] = '\0'; // 确保字符串以空字符结尾
 }
 
 void parse_dns_answer(u_char *buffer, int answer_offset, int answers)
@@ -405,9 +410,10 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
         parse_dns_name(NULL, qname, domain_name);
         printf("\t\t\t\tDomain name: %s", domain_name);
 
-        dns_question = (struct dnsq *)(packet + sizeof(struct ether_header) + ip_header_length
-                                       + udp_header_length + dns_header_length + (strlen(domain_name) + 1));
-        qtype        = dns_qtype_switch(ntohs(dns_question->qtype));
+        dns_question =
+            (struct dnsq *)(packet + sizeof(struct ether_header) + ip_header_length + udp_header_length
+                            + dns_header_length + (strlen(domain_name) + 1) + 1);
+        qtype = dns_qtype_switch(ntohs(dns_question->qtype));
         printf(" Query Type: %s, Query Class: %d\n", qtype, ntohs(dns_question->qclass));
 
         ipaddr = inet_ntoa(*(struct in_addr *)&ip_header->ip_src);
@@ -528,8 +534,6 @@ void cc_run()
 {
     pthread_t dns;
     pthread_t mqtt;
-
-    // cc_connect();
 
     if (pthread_create(&mqtt, NULL, cc_connect, (void *)0) != 0)
         ULOG_DEBUG("mqtt loop thread init failed\n");
