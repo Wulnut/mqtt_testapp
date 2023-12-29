@@ -1,5 +1,6 @@
 #include "cts_client.h"
 #include "common.h"
+#include <arpa/inet.h>
 #include <libubox/list.h>
 #include <libubox/uloop.h>
 #include <libubox/utils.h>
@@ -15,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
 
 cts_client_t     cc;
 DNS_request      dns_requests[MAX_DNS_REQUESTS];
@@ -209,15 +211,23 @@ static void cc_retry_conn()
 static void check_and_report()
 {
     time_t now = time(NULL);
+    ULOG_MARK();
+    ULOG_DEBUG("dns_count:%d\n", dns_request_count);
 
     if (dns_request_count > MAX_DNS_REQUESTS) {
         ULOG_DEBUG("Report: Reached 20 DNS requests.\n");
+
+        for (int i = 0; i < 20; ++i) {
+            ULOG_DEBUG("dns: %s\n", dns_requests[i].dns_request);
+        }
+
         dns_request_count = 0;
         return;
     }
 
     if (dns_request_count > 0 && now - dns_requests[0].timestamp >= 10) {
         ULOG_DEBUG("Report: Earliest DNS request delayed over 10 seconds.\n");
+        ULOG_DEBUG("dns: %s\n", dns_requests[0].dns_request);
         dns_request_count = 0;
         return;
     }
@@ -225,6 +235,9 @@ static void check_and_report()
 
 void add_dns_request(const char *request)
 {
+    ULOG_MARK();
+    ULOG_DEBUG("dns_count:%d\n", dns_request_count);
+
     if (dns_request_count < MAX_DNS_REQUESTS) {
 
         strncpy(dns_requests[dns_request_count].dns_request, request,
@@ -259,7 +272,7 @@ static void parse_dns_name(u_char *dns, u_char *buffer, char *output)
     output[i + j - 1] = '\0';
 }
 
-void parse_dns_answer(unsigned char *buffer, int answer_offset, int answers)
+void parse_dns_answer(u_char *buffer, int answer_offset, int answers)
 {
     int i = 0;
     ;
@@ -327,6 +340,9 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
     int                       *id                = (int *)arg;
     u_char                    *qname             = NULL;
     char                       domain_name[256]  = "";
+    const char                *qtype             = NULL;
+    char                       tmp[256]          = "";
+    char                      *ipaddr            = NULL;
     const struct ether_header *ethernet_header   = NULL;
     const struct ip           *ip_header         = NULL;
     const struct udphdr       *udp_header        = NULL;
@@ -391,8 +407,16 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
 
         dns_question = (struct dnsq *)(packet + sizeof(struct ether_header) + ip_header_length
                                        + udp_header_length + dns_header_length + (strlen(domain_name) + 1));
-        printf(" Query Type: %s, Query Class: %d\n", dns_qtype_switch(ntohs(dns_question->qtype)),
-               ntohs(dns_question->qclass));
+        qtype        = dns_qtype_switch(ntohs(dns_question->qtype));
+        printf(" Query Type: %s, Query Class: %d\n", qtype, ntohs(dns_question->qclass));
+
+        ipaddr = inet_ntoa(*(struct in_addr *)&ip_header->ip_src);
+
+        snprintf(tmp, sizeof(tmp), "%d,%s,%s,%s;", (int)pkthdr->ts.tv_sec, domain_name, qtype, ipaddr);
+
+        ULOG_DEBUG("Get dns %s\n", tmp);
+
+        add_dns_request(tmp);
     }
 
     printf("\n\n");
