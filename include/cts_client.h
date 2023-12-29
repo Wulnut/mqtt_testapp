@@ -70,8 +70,8 @@ struct dnshdr {
 };
 
 struct dnsq {
-    uint16_t qclass;
     uint16_t qtype;
+    uint16_t qclass;
 };
 
 struct dnsr {
@@ -87,6 +87,11 @@ typedef struct {
     char   dns_request[256];
     time_t timestamp;
 } DNS_request;
+
+typedef struct {
+    uint16_t qtype;
+    const char *name;
+} dns_qtype_entry;
 
 extern cts_client_t cc;
 
