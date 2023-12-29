@@ -2,6 +2,7 @@
 #include "common.h"
 #include <libubox/list.h>
 #include <libubox/uloop.h>
+#include <libubox/utils.h>
 #include <mosquitto.h>
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
@@ -19,6 +20,58 @@ cts_client_t     cc;
 DNS_request      dns_requests[MAX_DNS_REQUESTS];
 int              dns_request_count = 0;
 struct list_head session;
+
+static const dns_qtype_entry qtypes[] = {
+    {1,     "A"         },
+    {2,     "NS"        },
+    {3,     "MD"        },
+    {4,     "MF"        },
+    {5,     "CNAME"     },
+    {6,     "SOA"       },
+    {7,     "MB"        },
+    {8,     "MG"        },
+    {9,     "MR"        },
+    {10,    "NULL"      },
+    {11,    "WKS"       },
+    {12,    "RTP"       },
+    {13,    "HINFO"     },
+    {14,    "MINFO"     },
+    {15,    "MX"        },
+    {16,    "TXT"       },
+    {17,    "RP"        },
+    {18,    "AFSDB"     },
+    {24,    "SIG"       },
+    {25,    "KEY"       },
+    {28,    "AAAA"      },
+    {29,    "LOC"       },
+    {33,    "SRV"       },
+    {35,    "NAPTR"     },
+    {37,    "CERT"      },
+    {39,    "DNAME"     },
+    {41,    "OPT"       },
+    {42,    "APL"       },
+    {43,    "DS"        },
+    {44,    "SSHFP"     },
+    {45,    "IPSECKEY"  },
+    {46,    "RRSIG"     },
+    {47,    "NSEC"      },
+    {48,    "DNSKEY"    },
+    {49,    "DHCID"     },
+    {50,    "NSEC3"     },
+    {51,    "NSEC3PARAM"},
+    {55,    "HIP"       },
+    {59,    "CDS"       },
+    {60,    "CDNSKEY"   },
+    {61,    "OPENPGPKEY"},
+    {65,    "HTTPS"     },
+    {99,    "SPF"       },
+    {249,   "TKEY"      },
+    {250,   "TSIG"      },
+    {256,   "URI"       },
+    {257,   "CAA"       },
+    {32768, "TA"        },
+    {32769, "DLV"       }
+};
 
 static void cc_retry_conn();
 
@@ -247,6 +300,28 @@ void parse_dns_answer(unsigned char *buffer, int answer_offset, int answers)
     }
 }
 
+const char *dns_qtype_switch(uint16_t qtype)
+{
+    int low  = 0;
+    int mid  = 0;
+    int high = ARRAY_SIZE(qtypes);
+
+    while (low <= high) {
+        mid = low + (high - low) / 2;
+        if (qtypes[mid].qtype < qtype) {
+            low = mid + 1;
+        }
+        else if (qtypes[mid].qtype > qtype) {
+            high = mid - 1;
+        }
+        else {
+            return qtypes[mid].name; // 找到 qtype
+        }
+    }
+
+    return "Unknown QTYPE";
+}
+
 static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_char *packet)
 {
     int                       *id                = (int *)arg;
@@ -316,7 +391,8 @@ static void get_packet(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_ch
 
         dns_question = (struct dnsq *)(packet + sizeof(struct ether_header) + ip_header_length
                                        + udp_header_length + dns_header_length + (strlen(domain_name) + 1));
-        printf(" Query Type: %d, Query Class: %d\n", ntohs(dns_question->qtype), ntohs(dns_question->qclass));
+        printf(" Query Type: %s, Query Class: %d\n", dns_qtype_switch(ntohs(dns_question->qtype)),
+               ntohs(dns_question->qclass));
     }
 
     printf("\n\n");
