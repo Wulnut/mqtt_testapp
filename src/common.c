@@ -1,4 +1,5 @@
 #include "common.h"
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -48,4 +49,11 @@ void ulog(const char *priority, const char *fmt, ...)
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     va_end(ap);
+}
+
+char *_itoa(int64_t i)
+{
+    static char str[32];
+    snprintf(str, sizeof(str), "%" PRIu64 "", i);
+    return str;
 }
