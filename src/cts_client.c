@@ -120,11 +120,9 @@ static void mosquitto_fd_handler(struct uloop_fd *u, unsigned int events)
 }
 #endif
 
-static void *cc_connect()
+static void cc_connect()
 {
     ULOG_MARK();
-
-    pthread_detach(pthread_self());
 
     int rc = 0;
 #if TEST
@@ -533,10 +531,8 @@ void cc_init()
 void cc_run()
 {
     pthread_t dns;
-    pthread_t mqtt;
 
-    if (pthread_create(&mqtt, NULL, cc_connect, (void *)0) != 0)
-        ULOG_DEBUG("mqtt loop thread init failed\n");
+    cc_connect();
 
     if (pthread_create(&dns, NULL, dns_pcap, (void *)0) != 0)
         ULOG_DEBUG("dns packet thread init failed\n");
